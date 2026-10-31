@@ -14,25 +14,71 @@ This is the pi port of the upstream
 It is a pi package: one directory with the skills, the agents, the scripts and the extension.
 
 ```sh
-# from a checkout
-pi install /path/to/Pi/code-modernization
+# 1. requirements: pi and python3
+pi --version
+python3 --version
 
-# or straight from git
-pi install git:github.com/<you>/<repo>
+# 2. install it (personal scope — writes one entry into ~/.pi/agent/settings.json)
+cd /path/to/mcode-port-work
+pi install ./Pi/code-modernization
+
+# 3. confirm
+pi list        # should show .../mcode-port-work/Pi/code-modernization
 ```
 
 Then start pi in the folder you want to work on. The thirteen skills appear as `/skill:<name>`
-commands, and the extension adds the `task` and `ask_user` tools the procedures need.
+commands, and the extension adds the `task` and `ask_user` tools the procedures need. **The scripts
+need no further setup**: the extension exports `$CODE_MODERNIZATION_ROOT`, so every skill reaches
+`scripts/` and `assets/` on its own.
 
-To try it without installing anything:
+Other ways to install:
 
 ```sh
-pi --skill ./skills --extension ./extensions/code-modernization.ts
+# try it for one run, without touching any setting
+pi -e ./Pi/code-modernization
+pi --skill ./Pi/code-modernization/skills \
+   --extension ./Pi/code-modernization/extensions/code-modernization.ts
+
+# project scope (writes .pi/settings.json; the project must be trusted first)
+pi install -l ./Pi/code-modernization
+
+# by hand, without the package manager: copy the whole package, then point at it
+mkdir -p ~/.pi/agent/packages
+cp -R Pi/code-modernization ~/.pi/agent/packages/
 ```
+
+```json
+{
+  "extensions": ["~/.pi/agent/packages/code-modernization/extensions/code-modernization.ts"],
+  "skills": ["~/.pi/agent/packages/code-modernization/skills"]
+}
+```
+
+Copy the whole package: the extension finds the package root by walking up from its own location
+(the directory that holds `scripts/build_report.py`). If you install it apart from the rest, set
+`CODE_MODERNIZATION_ROOT` to the package root instead.
+
+Maintenance:
+
+```sh
+pi list                              # installed packages
+pi remove ./Pi/code-modernization    # uninstall (drops the settings.json entry)
+pi update --extensions               # update packages that come from a remote source
+pi config                            # enable/disable the resources of a package one by one
+```
+
+This package is a mirror: pi loads a local-path package from that path instead of copying it, so
+after you edit it, `/reload` (or a new session) is enough — no reinstall needed.
 
 Requirements: `python3` on `PATH` (the report, the proof and the rule renderer are Python). Without
 it the skills still run, but the artifacts they generate are not produced — the agent says so in one
 line instead of failing.
+
+Check the installation:
+
+```sh
+cd /tmp && pi --no-session -p "list the skill names you can see that start with modernize"
+```
 
 ## Start here
 

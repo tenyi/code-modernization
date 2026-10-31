@@ -26,7 +26,31 @@ import { Key, matchesKey, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = path.resolve(EXTENSION_DIR, "..");
+
+/**
+ * The package root: the directory that holds `scripts/` and `assets/`.
+ *
+ * Looked up from the extension's own location (the normal case: the extension sits in
+ * `<package>/extensions/`), so a package that is installed, copied or symlinked anywhere
+ * still finds its own scripts. `CODE_MODERNIZATION_ROOT` overrides it when the extension
+ * is installed apart from the rest of the package.
+ */
+function findPackageRoot(): string {
+	const override = process.env.CODE_MODERNIZATION_ROOT;
+	if (override && fs.existsSync(path.join(override, "scripts", "build_report.py"))) {
+		return path.resolve(override);
+	}
+	let dir = EXTENSION_DIR;
+	for (let depth = 0; depth < 6; depth++) {
+		if (fs.existsSync(path.join(dir, "scripts", "build_report.py"))) return dir;
+		const parent = path.dirname(dir);
+		if (parent === dir) break;
+		dir = parent;
+	}
+	return path.resolve(EXTENSION_DIR, "..");
+}
+
+const PACKAGE_ROOT = findPackageRoot();
 const AGENTS_DIR = path.join(PACKAGE_ROOT, "agents");
 const SCRIPTS_DIR = path.join(PACKAGE_ROOT, "scripts");
 

@@ -13,34 +13,50 @@ This is the pi port of the upstream
 
 It is a pi package: one directory with the skills, the agents, the scripts and the extension.
 
+**Install it in the project that needs it.** A project-scoped install writes one entry into that
+project's `.pi/settings.json` and touches nothing global.
+
 ```sh
 # 1. requirements: pi and python3
 pi --version
 python3 --version
 
-# 2. install it (personal scope — writes one entry into ~/.pi/agent/settings.json)
-cd /path/to/mcode-port-work
-pi install ./Pi/code-modernization
+# 2. install it in the project that will use it
+cd /path/to/your/project
+pi install -l /path/to/mcode-port-work/Pi/code-modernization
 
-# 3. confirm
-pi list        # should show .../mcode-port-work/Pi/code-modernization
+# 3. first start in that project asks whether to trust it — trust is required before the
+#    package loads (non-interactive: pi -a for a single run)
+pi -a
+
+# 4. confirm
+cat .pi/settings.json      # should show "packages": [".../Pi/code-modernization"]
 ```
 
-Then start pi in the folder you want to work on. The thirteen skills appear as `/skill:<name>`
-commands, and the extension adds the `task` and `ask_user` tools the procedures need. **The scripts
-need no further setup**: the extension exports `$CODE_MODERNIZATION_ROOT`, so every skill reaches
-`scripts/` and `assets/` on its own.
+Then start pi in that project. The thirteen skills appear as `/skill:<name>` commands, and the
+extension adds the `task` and `ask_user` tools the procedures need. **The scripts need no further
+setup**: the extension exports `$CODE_MODERNIZATION_ROOT`, so every skill reaches `scripts/` and
+`assets/` on its own.
+
+Remove it again when the project no longer needs it (only that project is affected):
+
+```sh
+cd /path/to/your/project
+pi remove -l --approve /path/to/mcode-port-work/Pi/code-modernization
+```
 
 Other ways to install:
 
 ```sh
 # try it for one run, without touching any setting
+cd /path/to/mcode-port-work
 pi -e ./Pi/code-modernization
 pi --skill ./Pi/code-modernization/skills \
    --extension ./Pi/code-modernization/extensions/code-modernization.ts
 
-# project scope (writes .pi/settings.json; the project must be trusted first)
-pi install -l ./Pi/code-modernization
+# global (optional): every project loads it
+pi install /path/to/mcode-port-work/Pi/code-modernization
+pi remove /path/to/mcode-port-work/Pi/code-modernization
 
 # by hand, without the package manager: copy the whole package, then point at it
 mkdir -p ~/.pi/agent/packages
@@ -61,8 +77,9 @@ Copy the whole package: the extension finds the package root by walking up from 
 Maintenance:
 
 ```sh
-pi list                              # installed packages
-pi remove ./Pi/code-modernization    # uninstall (drops the settings.json entry)
+pi list                              # installed packages (user scope; project scope lives in the project's .pi/settings.json)
+pi remove -l --approve <source>      # remove a project-scoped package (needs project trust)
+pi remove <source>                   # remove a global package
 pi update --extensions               # update packages that come from a remote source
 pi config                            # enable/disable the resources of a package one by one
 ```
@@ -77,7 +94,8 @@ line instead of failing.
 Check the installation:
 
 ```sh
-cd /tmp && pi --no-session -p "list the skill names you can see that start with modernize"
+cd /path/to/your/project
+pi -a --no-session -p "list the skill names you can see that start with modernize"
 ```
 
 ## Start here

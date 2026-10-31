@@ -7,7 +7,7 @@
 | `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
-| `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版移植 | pi package：`pi install <path>`，見 [pi 安裝說明](Pi/README.md) |
+| `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
 
 Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
 author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生。
@@ -49,41 +49,49 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 
 pi 版是一個 pi package（`Pi/code-modernization/`），安裝後 13 個技能與 extension 會一起生效。
 
+**原則：用在哪個專案，就裝在那個專案。** 所以預設是專案範圍安裝（寫入該專案的 `.pi/settings.json`），
+不動全域設定。
+
 ```sh
 # 1. 先備份份：pi、python3 都要有
 pi --version
 python3 --version
 
-# 2. 在本倉庫根目錄安裝（personal scope，寫入 ~/.pi/agent/settings.json）
-cd /path/to/mcode-port-work
-pi install ./Pi/code-modernization
+# 2. 在「要用這套工作流的專案」裡安裝（專案範圍，寫入 <專案>/.pi/settings.json）
+cd /path/to/your/project
+pi install -l /path/to/mcode-port-work/Pi/code-modernization
 
-# 3. 確認已註冊
-pi list          # 應該看到 .../mcode-port-work/Pi/code-modernization
+# 3. 第一次在該專案啟動 pi 時，pi 會問要不要信任這個專案 —— 信任後套件才會載入
+#    （非互動模式用 pi -a 單次信任）
+pi -a
+
+# 4. 確認
+cat .pi/settings.json      # 會有 "packages": [".../Pi/code-modernization"]
 ```
 
-`pi install` 會在 `~/.pi/agent/settings.json` 的 `packages` 陣列加一筆（相對於 settings 檔的路徑）：
+裝好後在該專案啟動 pi，13 個技能就以 `/skill:modernize …` 的形式出現，extension 同時提供
+`task`（子代理）與 `ask_user`（問卷）兩個工具。**技能與腳本都不需要另外設定**：extension 會匯出
+`$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡的 `scripts/` 與 `assets/`。
 
-```json
-{
-  "packages": [".../Pi/code-modernization"]
-}
+不用的時候移除（只影響那個專案）：
+
+```sh
+cd /path/to/your/project
+pi remove -l --approve /path/to/mcode-port-work/Pi/code-modernization
 ```
-
-接著在要分析的工作目錄啟動 pi，13 個技能就以 `/skill:modernize …` 的形式出現，extension 同時
-提供 `task`（子代理）與 `ask_user`（問卷）兩個工具。**技能與腳本都不需要另外設定**：
-extension 會匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡的 `scripts/` 與 `assets/`。
 
 其他三種安裝方式：
 
 ```sh
-# a) 只試用一次，不寫入設定
+# a) 只試用一次，不寫入任何設定
+cd /path/to/mcode-port-work
 pi -e ./Pi/code-modernization
 pi --skill ./Pi/code-modernization/skills \
    --extension ./Pi/code-modernization/extensions/code-modernization.ts
 
-# b) 專案範圍（寫入專案的 .pi/settings.json，需先信任專案才會載入）
-pi install -l ./Pi/code-modernization
+# b) 全域安裝（選擇性）：寫入 ~/.pi/agent/settings.json，所有專案都會載入
+pi install /path/to/mcode-port-work/Pi/code-modernization
+pi remove /path/to/mcode-port-work/Pi/code-modernization      # 移除
 
 # c) 手動安裝（不經 package manager）：整包搬過去，settings 指到套件裡的 extension
 mkdir -p ~/.pi/agent/packages
@@ -98,18 +106,19 @@ cp -R Pi/code-modernization ~/.pi/agent/packages/
 其他常見動作：
 
 ```sh
-pi list                              # 看已安裝的套件
-pi remove ./Pi/code-modernization    # 移除（會從 settings.json 刪掉那一筆）
+pi list                              # 看已安裝的套件（只列 user scope；專案範圍的看該專案的 .pi/settings.json）
 pi update --extensions               # 對遠端來源的套件更新版本
+pi config                            # 逐一啟用/停用套件裡的資源（技能、extension）
 ```
 
 本倉庫是**鏡像**：pi 對本地路徑的套件是「載入、不複製」，所以改完 `Pi/code-modernization/` 之後，
 在 pi 裡 `/reload`（或重開 session）就會生效，不必重新 `pi install`。
 
-驗證安裝：
+驗證安裝（在該專案裡）：
 
 ```sh
-cd /tmp && pi --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
+cd /path/to/your/project
+pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 ```
 
 完整說明見 [Pi/README.md](Pi/README.md) 與套件自己的 [README](Pi/code-modernization/README.md)。
@@ -132,7 +141,8 @@ rsync -a --delete --exclude '.git' --exclude '__pycache__' \
   ~/.gemini/skills/code-modernization/ Antigravity/code-modernization/
 
 # pi 版：本地路徑套件是「載入不複製」，改完在 pi 裡 /reload 即生效；重裝用：
-pi install ./Pi/code-modernization
+#   用在哪個專案就裝在哪個專案（寫入該專案的 .pi/settings.json）
+cd /path/to/your/project && pi install -l /path/to/mcode-port-work/Pi/code-modernization
 
 # 提交
 git add -A && git commit -m "sync ports"

@@ -37,38 +37,52 @@ python3 --version   # 報告、證明包、規則渲染都是 Python
 
 沒有 `python3` 時技能仍會執行，但不會產生報告與證明檔 —— agent 會用一行字說明，而不是失敗。
 
-### 安裝（推薦）
+### 安裝（推薦：裝在專案下）
+
+**用在哪個專案，就裝在那個專案。** 不動全域設定，也不需要記得解除安裝。
 
 ```sh
-cd /path/to/mcode-port-work      # 本倉庫根目錄
-pi install ./Pi/code-modernization
-pi list                           # 確認：應該看到 .../Pi/code-modernization
+# 1. 需求：pi、python3
+pi --version
+python3 --version
+
+# 2. 在「要用這套工作流的專案」裡安裝（寫入 <專案>/.pi/settings.json）
+cd /path/to/your/project
+pi install -l /path/to/mcode-port-work/Pi/code-modernization
+
+# 3. 第一次在該專案啟動 pi 時，pi 會問要不要信任這個專案 —— 信任後套件才會載入
+#    （非互動模式用 pi -a 單次信任）
+pi -a
+
+# 4. 確認
+cat .pi/settings.json      # 會有 "packages": [".../Pi/code-modernization"]
 ```
 
-這會在 `~/.pi/agent/settings.json` 的 `packages` 陣列加一筆（相對於 settings 檔的路徑）：
-
-```json
-{
-  "packages": [".../Pi/code-modernization"]
-}
-```
-
-接著在要分析的工作目錄啟動 pi：
+裝好後在該專案啟動 pi：
 
 - 13 個技能以 `/skill:modernize`…`/skill:modernize-verify` 的形式出現；
 - extension 同時提供 `task`（子代理）與 `ask_user`（問卷）兩個工具；
 - **腳本不用另外設定**：extension 匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到 `scripts/` 與 `assets/`。
 
+不用的時候移除（只影響那個專案）：
+
+```sh
+cd /path/to/your/project
+pi remove -l --approve /path/to/mcode-port-work/Pi/code-modernization
+```
+
 ### 其他安裝方式
 
 ```sh
 # a) 只試用一次，不寫入任何設定
+cd /path/to/mcode-port-work
 pi -e ./Pi/code-modernization
 pi --skill ./Pi/code-modernization/skills \
    --extension ./Pi/code-modernization/extensions/code-modernization.ts
 
-# b) 專案範圍：寫入專案的 .pi/settings.json（載入前需先信任該專案）
-pi install -l ./Pi/code-modernization
+# b) 全域安裝（選擇性）：寫入 ~/.pi/agent/settings.json，所有專案都會載入
+pi install /path/to/mcode-port-work/Pi/code-modernization
+pi remove /path/to/mcode-port-work/Pi/code-modernization      # 移除
 
 # c) 手動安裝（不經 package manager）：整包搬過去，settings 指到套件裡的 extension
 mkdir -p ~/.pi/agent/packages
@@ -89,8 +103,9 @@ cp -R Pi/code-modernization ~/.pi/agent/packages/
 ### 常用維護指令
 
 ```sh
-pi list                              # 已安裝的套件
-pi remove ./Pi/code-modernization    # 移除（會從 settings.json 刪掉那一筆）
+pi list                              # 已安裝的套件（只列 user scope；專案範圍的看該專案的 .pi/settings.json）
+pi remove -l --approve <source>      # 移除專案範圍的套件（只影響該專案；改專案設定需要信任）
+pi remove <source>                   # 移除全域套件
 pi update --extensions               # 對遠端來源的套件更新版本
 pi config                            # 逐一啟用/停用套件裡的資源（技能、extension）
 ```
@@ -101,7 +116,8 @@ pi config                            # 逐一啟用/停用套件裡的資源（�
 ### 驗證
 
 ```sh
-cd /tmp && pi --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
+cd /path/to/your/project
+pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 ```
 
 應該列出 13 個技能名。再問一次「列出你不能直接讀檔但可以呼叫的工具」，
@@ -111,7 +127,15 @@ cd /tmp && pi --no-session -p "列出你能看到的、以 modernize 開頭的�
 
 本倉庫是鏡像。pi 沒有「plugin 目錄」這種固定來源，實際生效的是：
 
-- `~/.pi/agent/skills/`（技能）、`~/.pi/agent/extensions/`（extension），或
-- `~/.pi/agent/settings.json` 裡的 `packages` / `skills` / `extensions` 設定。
+- 專案範圍（推薦）：該專案的 `.pi/settings.json` 裡的 `packages` —— `pi install -l <path>` 寫入；
+- 全域：`~/.pi/agent/settings.json` 的 `packages`，或 `~/.pi/agent/skills/` + `~/.pi/agent/extensions/`。
 
-所以改完這裡，要 `pi install`（或把 `skills/`、`extensions/` 複製過去）才會生效。
+所以改完這裡，裝在哪裡就在哪裡 `/reload`（或重開 session）即生效，不必重新 `pi install`。
+以專案範圍安裝為例：
+
+```sh
+cd /path/to/your/project
+pi install -l /path/to/mcode-port-work/Pi/code-modernization   # 裝進該專案
+# ... 改完 Pi/code-modernization/ 後，在該專案的 pi 裡 /reload
+pi remove -l --approve /path/to/mcode-port-work/Pi/code-modernization     # 用完移除
+```

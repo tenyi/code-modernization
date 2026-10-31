@@ -2,10 +2,13 @@
 
 同一套「遺產系統現代化」工作流，在兩個 runtime 各有一份移植。這個倉庫把兩份並排放著，方便對照、比較與備份。
 
-| 目錄 | Runtime | 來源（真正被 runtime 讀取的地方） |
-| --- | --- | --- |
-| `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | `~/.minimax/plugins/code-modernization/` |
-| `Antigravity/code-modernization/` | Antigravity / Gemini CLI | `~/.gemini/skills/code-modernization/` |
+| 目錄 | Runtime | 誰做的 | 來源（真正被 runtime 讀取的地方） |
+| --- | --- | --- | --- |
+| `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
+| `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
+
+Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
+author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生。
 
 > ⚠️ 這個倉庫是**鏡像**，不是執行來源。改完這裡，要同步回上表右欄的目錄才會生效；
 > 反過來，那邊被別的工具改動時，這裡會顯示為 diff。
@@ -23,6 +26,8 @@
 
 **Antigravity 版**（`Antigravity/`）
 
+- 由 Antigravity 裡的 Gemini 3.8 Flash 製作，基於 MiniMax Code 版衍生：
+  共用的 skill／agent／script 檔案沿用 MiniMax Code 版的內容，入口與工具名改成該 runtime 的慣例
 - 同一套 13 個流程 Skill，但入口是根目錄的 `SKILL.md`（繁體中文說明），符合 Gemini CLI 的技能目錄慣例
 - agent 檔案同樣存在，但工具名與載入方式由 Antigravity 決定
 - 有自己的 git 歷史（來源目錄內含 `.git`）

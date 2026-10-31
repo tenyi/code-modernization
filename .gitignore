@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+
+# Local secrets
+.env
+.env.*

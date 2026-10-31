@@ -1,0 +1,42 @@
+{
+  "description": "X-ray notes for a file the agent reads, and the progress line with the next step",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/xray.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\xray.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/status.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\status.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/status.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\status.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

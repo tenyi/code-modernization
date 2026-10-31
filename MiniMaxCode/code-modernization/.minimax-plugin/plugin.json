@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "name": "code-modernization",
+  "displayName": "Code Modernization",
+  "version": "2.0.0",
+  "description": "Guided modernization for any legacy codebase: an assessment, a structure map, the business rules mined from the code, a plan a person approves, then an uplift, a rewrite or a rebuild with independent proof that the new code behaves like the old. Includes security hardening, a one-page HTML report and eight specialist subagents.",
+  "author": "Anthropic (original Claude Code plugin), ported to MiniMax Code",
+  "icon": "icon.png",
+  "darkIcon": "icon-dark.png",
+  "category": "Code",
+  "exampleQueries": [
+    "Use code-modernization:modernize to work out what this legacy system does and what to do with it.",
+    "Use code-modernization:modernize-extract-rules to mine the business rules out of this codebase.",
+    "Use code-modernization:modernize-verify to prove that the rewritten module behaves like the old one.",
+    "Use code-modernization:modernize-harden to scan the legacy system for security problems."
+  ],
+  "apps": [],
+  "mcpServers": [],
+  "skills": [
+    "skills/modernize/SKILL.md",
+    "skills/modernize-preflight/SKILL.md",
+    "skills/modernize-assess/SKILL.md",
+    "skills/modernize-map/SKILL.md",
+    "skills/modernize-extract-rules/SKILL.md",
+    "skills/modernize-review/SKILL.md",
+    "skills/modernize-brief/SKILL.md",
+    "skills/modernize-transform/SKILL.md",
+    "skills/modernize-uplift/SKILL.md",
+    "skills/modernize-reimagine/SKILL.md",
+    "skills/modernize-verify/SKILL.md",
+    "skills/modernize-harden/SKILL.md",
+    "skills/modernize-status/SKILL.md"
+  ],
+  "agents": [
+    "agents/legacy-analyst.md",
+    "agents/business-rules-extractor.md",
+    "agents/architecture-critic.md",
+    "agents/security-auditor.md",
+    "agents/test-engineer.md",
+    "agents/version-delta-analyst.md",
+    "agents/uplift-migrator.md",
+    "agents/scaffolder.md"
+  ],
+  "hooks": ["hooks/hooks.json"]
+}

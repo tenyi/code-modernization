@@ -1,0 +1,23 @@
+{
+  "name": "code-modernization",
+  "version": "2.1.0",
+  "description": "Guided modernization for any legacy codebase: an assessment, a structure map, the business rules mined from the code, a plan a person approves, then an uplift, a rewrite or a rebuild with independent proof that the new code behaves like the old. Includes security hardening, a one-page HTML report and eight specialist subagents.",
+  "license": "Apache-2.0",
+  "author": "Anthropic (original Claude Code plugin), ported to pi",
+  "keywords": [
+    "pi-package",
+    "code-modernization",
+    "legacy",
+    "modernization",
+    "refactoring",
+    "uplift"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/code-modernization.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  }
+}

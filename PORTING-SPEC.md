@@ -40,6 +40,10 @@ is MiniMax Code (mcode). You convert **procedure prose**, you do not redesign th
 5. **No Claude-Code-only vocabulary left behind.** No "slash command", no "the plugin registers
    it", no "Workflow tool", no `CLAUDE_PLUGIN_ROOT`, no `AskUserQuestion`, no `TodoWrite`,
    no `Task`/`subagent_type`, no `.claude/settings.json`, no `CLAUDE.md`, no "the pane".
+   Artifacts that name the agent must say "the agent", not "Claude": the proof pack
+   (`scripts/proof_pack.py`), the HTML report (`assets/report-template.html`) and the topology
+   viewer (`assets/topology-viewer.html`) each say so, and the first two carry the same sentence
+   in two outputs — change both together.
 6. **Do not invent tools, files, scripts or settings** that the target package does not have.
    The only scripts that exist are listed in §5. If a step needs something that does not exist,
    do it with the tools that do exist and say plainly what you did.

@@ -401,7 +401,7 @@ function renderSidebar() {
   sidebar.innerHTML = `
     <span class="closebtn" id="close">×</span>
     <h2>${esc(n.name)}</h2>
-    <div class="meta">${esc(n.kind)}${n.language ? " · " + esc(n.language) : ""}${n.loc ? " · " + n.loc.toLocaleString() + " LOC" : ""}</div>${n.description ? `<p class="desc">${esc(n.description)}<span class="cap">written by Claude from a source excerpt and the node's connections</span></p>` : ""}
+    <div class="meta">${esc(n.kind)}${n.language ? " · " + esc(n.language) : ""}${n.loc ? " · " + n.loc.toLocaleString() + " LOC" : ""}</div>${n.description ? `<p class="desc">${esc(n.description)}<span class="cap">written by the agent from a source excerpt and the node's connections</span></p>` : ""}
     <div>${entrySet.has(n.id) ? '<span class="badge entry">entry point</span>' : ""}
       ${deadSet.has(n.id) ? '<span class="badge">dead-end candidate</span>' : ""}
       <span class="badge">fan-in ${fanIn.get(n.id) || 0}</span>

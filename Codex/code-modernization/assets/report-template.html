@@ -376,7 +376,7 @@ function proofModule(m) {
   out = out.concat(bullets('Caveats', m.caveats || []), bullets('What this does not prove', m.notProven || []));
   var people = (m.people || []).map(function (i) { return '☐ ' + i.text + (i.where ? ' [' + i.where + ']' : ''); }).concat((m.needsPerson || []).map(function (i) { return '☐ ' + i; }));
   out.push(h('h4', null, ['Waiting for a person']));
-  out.push(h('p', {class: 'note'}, ['Claude never ticks these. A person decides them.' + (m.peopleCount > (m.people || []).length ? ' ' + fmt(m.peopleCount - m.people.length) + ' more are in the brief.' : '')]));
+  out.push(h('p', {class: 'note'}, ['The agent never ticks these. A person decides them.' + (m.peopleCount > (m.people || []).length ? ' ' + fmt(m.peopleCount - m.people.length) + ' more are in the brief.' : '')]));
   out.push(people.length ? h('ul', null, people.map(function (t) { return h('li', null, [t]); })) : h('p', null, [m.briefFound ? 'The brief lists no unticked criterion for this module.' : 'No brief was found, so no criterion could be listed.']));
   return out;
 }
@@ -388,7 +388,7 @@ function partProof(pv) {
   (pv.modules || []).forEach(function (m) { out = out.concat(proofModule(m)); });
   if ((pv.tooling || []).length) out.push(h('p', {class: 'note'}, ['Test tooling (not judged): ' + pv.tooling.map(function (t) { return t.name; }).join(', ') + '. It holds tests and no code of its own, so it gets no verdict.']));
   var so = pv.signoff || {}, line = function (v, dflt) { return v || dflt; };
-  out.push(h('h3', null, ['Sign-off']), h('p', {class: 'note'}, ['A person fills this in. Claude leaves it blank.']),
+  out.push(h('h3', null, ['Sign-off']), h('p', {class: 'note'}, ['A person fills this in. The agent leaves it blank.']),
     plainTable('Sign-off', ['Field', 'Entry'], [['Name', line(so.name, '________________')], ['Role', line(so.role, '________________')], ['Date', line(so.date, '__________')], ['Decision', line(so.decision, 'accept / accept with conditions / reject')]]));
   if ((pv.rules || []).length) out.push(h('details', null, [h('summary', null, ['How the verdict is computed'])].concat([h('ul', null, pv.rules.map(function (t) { return h('li', null, [t]); }))])));
   return out;

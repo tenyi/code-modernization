@@ -32,7 +32,7 @@
 2. **絕不修改 legacy 原始碼**。所有保證（唯讀 `legacy/`，只寫 `analysis/<system>/` 與 `modernized/`）必須存活。
 3. **每個主張都要有證據**。上游的「引用 `file:line`」「測試才是裁判」「只被跳過測試命名的規則不算數」全部保留。
 4. **六個決策點仍然由人決定**：preflight 的回答、看起來不對的規則、核准 brief、接受證明找到的差異、簽署證明、套用安全修補。絕不让代理自行決定。
-5. **不留 Claude Code / mcode 的詞彙**。不得出現 `CLAUDE_PLUGIN_ROOT`、`AskUserQuestion`、`Workflow` 工具、`subagent_type`、`TodoWrite`、`.claude/settings.json`、`CLAUDE.md`、`slash command`、「pop-up」等。
+5. **不留 Claude Code / mcode 的詞彙**。不得出現 `CLAUDE_PLUGIN_ROOT`、`AskUserQuestion`、`Workflow` 工具、`subagent_type`、`TodoWrite`、`.claude/settings.json`、`CLAUDE.md`、`slash command`、「pop-up」等。產物裡指稱代理的字樣要寫 `the agent`，不是 `Claude`：`scripts/proof_pack.py`、`assets/report-template.html`、`assets/topology-viewer.html` 各有一處，前兩者是同一句話的兩種輸出，要一起改。
 6. **不虛構工具、檔案、腳本或設定**。腳本只有 `scripts/` 底下那 10 支。
 7. **不硬編碼絕對路徑**。套件檔案走 `$CODE_MODERNIZATION_ROOT`，工作區路徑相對於工作目錄。
 8. **技能名一律寫成 `/skill:<name>`**；代理名一律寫成裸名（例如 `legacy-analyst`），因為 pi 沒有 plugin namespace。

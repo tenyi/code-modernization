@@ -966,7 +966,7 @@ def render_md(pack):
             out += ["- Declared tolerance (relative %g, absolute %g), %d case(s): %s" % (t["rel"] or 0, t["abs"] or 0, t["cases"], cell(t["why"])) for t in f["tolerances"]]
             out += ["- Not counted, because the legacy output equals a development output (status lines repeat by nature): " + ", ".join(cell(x) for x in f["reused"][:20])] if f["reused"] else []
         out += (["", "### Caveats", ""] + ["- " + cell(c) for c in m["caveats"]]) if m["caveats"] else []
-        out += ["", "### Waiting for a person", "", "Claude never ticks these. A person decides them.", ""]
+        out += ["", "### Waiting for a person", "", "The agent never ticks these. A person decides them.", ""]
         out += ["- [ ] %s [%s]" % (cell(i["text"]), i["where"]) for i in br["items"]] + ["- [ ] " + cell(n) for n in m["needsPerson"]]
         if not br["items"] and not m["needsPerson"]:
             out.append("- The brief lists no unticked criterion for this module." if br["found"] else "- No MODERNIZATION_BRIEF.md was found, so no criterion could be listed.")
@@ -974,7 +974,7 @@ def render_md(pack):
             out.append("- ... and %d more in the brief." % (br["count"] - len(br["items"])))
         out += ["", "### What this does not prove", ""] + ["- " + cell(n) for n in m["notProven"]]
     s = pack["signoff"]
-    out += ["", "## Sign-off", "", "A person fills this in. Claude leaves it blank.", "", "| | |", "|---|---|", "| Name | %s |" % (s["name"] or "________________"), "| Role | %s |" % (s["role"] or "________________"),
+    out += ["", "## Sign-off", "", "A person fills this in. The agent leaves it blank.", "", "| | |", "|---|---|", "| Name | %s |" % (s["name"] or "________________"), "| Role | %s |" % (s["role"] or "________________"),
             "| Date | %s |" % (s["date"] or "__________"), "| Decision | %s |" % (s["decision"] or "accept / accept with conditions / reject"), "", "## How each verdict is computed", ""]
     return "\n".join(out + [pack["rules"][0], ""] + pack["rules"][1:]) + "\n"
 

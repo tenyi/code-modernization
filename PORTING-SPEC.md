@@ -182,8 +182,10 @@ scripts/make_shards.py    scripts/render_rules.py  scripts/status.py  scripts/xr
 
 - `make_shards.py`、`render_rules.py`、`build_report.py` 的第一個參數是 system 名，與上游一致。
 - `xray.py` 與 `status.py` 只由 hooks／extension 呼叫，技能不直接呼叫。
-- **沒有 hooks 的 runtime**：這兩支腳本不會被自動呼叫，移植後必須在散文裡**不要暗示它們存在**
-  （規則 6 的「不虛構」），必要時明講要使用者手動執行。
+- **沒有 hooks 的 runtime（Codex）**：這兩支腳本根本不存在於套件裡，移植後必須在散文裡
+  **不要暗示它們存在**（這是規則 6 的「不虛構」）。
+- **有 hooks 但 runtime 可能不執行它們的（Antigravity）**：README 要寫明「runtime 不跑 hooks 時
+  就不會被呼叫，而且沒有任何技能依賴它們」，散文也不得暗示狀態列／x-ray 一定會出現。
 - 唯一的字串例外：OpenCode 版改了 `build_report.py` 的 `go()`（`code-modernization:%s %s` → `@%s %s`）
   與 `proof_pack.py` 的 `trace_problem`（`code-modernization:modernize-extract-rules %s` →
   `@modernize-extract-rules %s`）。**`status.py` 複用 `build_report.next_step`，改一支等於改兩支。**
@@ -244,7 +246,7 @@ grep -rn "\bClaude\b" <套件>/scripts <套件>/assets    # 只允許 README 指
 | runtime | 規格檔 | 內容摘要 |
 | --- | --- | --- |
 | MiniMax Code（母版） | [`MiniMaxCode/PORTING-SPEC.md`](MiniMaxCode/PORTING-SPEC.md) | mcode 工具對應、skill 工具與 `code-modernization:` 前綴、`ask_user`、`task`、`hooks/hooks.json`、`.minimax-plugin` manifest |
-| Antigravity | [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT`、無 hooks（chmod guardrail） |
+| Antigravity | [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT` fallback、hooks（不保證會被執行）、chmod guardrail |
 | Codex | [`Codex/PORTING-SPEC.md`](Codex/PORTING-SPEC.md) | 單一技能 + 程序檔、角色指引式代理、`CODE_MODERNIZATION_ROOT` 自行設定、循序執行、無 hooks |
 | pi | [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md) | 技能發現、extension 補三塊拼圖（`task`／`ask_user`／hooks）、`find` 取代 `glob` |
 | OpenCode | [`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md) | 技能 ID 與 `@` 字串規則、`question`／`subagent`、permissions 封閉清單、server plugin、`shell` 取代 `bash` |

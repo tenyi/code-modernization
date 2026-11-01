@@ -51,6 +51,8 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
   問卷是 `ask_question`、委派是 `invoke_subagent`（`Role`/`TypeName`）、
   套件路徑走 `$SKILL_ROOT`（fallback `~/.gemini/skills/code-modernization`）、
   legacy 保護靠 workspace guardrails ＋ `chmod -R a-w legacy/`（無 mcode 的 permission.json／模式）
+- 套件仍附 `hooks/hooks.json`（與母版同樣三個 hook，路徑改用 `$SKILL_ROOT` fallback），
+  但 Antigravity **不保證會執行 hooks**：runtime 不跑時就不會被呼叫，且沒有任何技能依賴它們
 - 有自己的 git 歷史（來源目錄內含 `.git`）
 
 **pi 版**（`Pi/`）

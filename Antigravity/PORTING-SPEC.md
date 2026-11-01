@@ -25,7 +25,7 @@
 | `${PLUGIN_DATA}` | 無對應 | 不使用 |
 | `read`/`write`/`edit`/`bash`/`grep`/`glob` | **`read_file`/`write_file`/`edit_file`/`run_command`**（另有 grep/glob） | 散文裡的工具名要一併改；「Use bash ONLY…」→「Use `run_command` ONLY…」 |
 | `todowrite` | 無對應 | 母版未使用 |
-| `PostToolUse`(read) → x-ray、`UserPromptSubmit`/`SessionStart` → 狀態列 | **無 hooks** | 見 §4 |
+| `PostToolUse`(read) → x-ray、`UserPromptSubmit`/`SessionStart` → 狀態列 | **有 hooks**：`hooks/hooks.json`，與母版同樣三個，只把 `${PLUGIN_ROOT}` 換成 `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}` | 見 §4 |
 | `.minimax-plugin/plugin.json` manifest | **無 manifest**（Gemini CLI 技能目錄慣例） | 套件裡不放 manifest |
 | `~/.minimax/permission.json`、`/permission status`、ask/auto 模式 | **無對應**：靠 Antigravity 的 workspace guardrails + 檔案系統 `chmod` | 見 §4 |
 
@@ -92,13 +92,20 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 
 ---
 
-## 4. 沒有 hooks 的後果（必須寫在移植裡）
+## 4. Hooks 與 legacy 保護
 
-Antigravity 沒有 mcode 的 hook 機制，所以：
+**hooks 是有的**：`hooks/hooks.json` 與母版結構相同，三個 hook、逾時 5 秒，
+差別只在路徑變數：
 
-- `scripts/xray.py`（x-ray 註解）與 `scripts/status.py`（狀態列）**不會自動執行**。
-  散文裡**不得暗示它們會自動跑**；需要時明講「手動執行」。
-- 兩支腳本仍留在套件裡（失敗即略過，無害），README 要說明它們不會自動被呼叫。
+| 事件 | 對應上游 | 呼叫 |
+| --- | --- | --- |
+| `PostToolUse`（matcher `read`） | `hooks/xray/xray.ts` | `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/xray.py"` |
+| `UserPromptSubmit` | `hooks/reader/progress.ts` | 同上，`scripts/status.py` |
+| `SessionStart` | `hooks/reader/progress.ts` | 同上，`scripts/status.py` |
+
+- **但不能假設 Antigravity 會執行 hooks**：README 必須寫明「runtime 不跑 hooks 時就不會被呼叫，
+  而且沒有任何技能依賴它們」（母版同款措辭）。散文裡也**不得暗示**狀態列／x-ray 一定會出現。
+- 兩支腳本保留在套件裡（失敗即略過，無害），必要時可手動執行。
 - **legacy 保護**改由兩層機制承擔：
   1. Antigravity 的 workspace guardrails：寫入只留在 `analysis/` 與 `modernized/`，
      `legacy/<name>/` 視為唯讀。
@@ -137,13 +144,18 @@ Antigravity/code-modernization/
   SKILL.md                          入口（繁中說明 + 步驟表格）
   agents/<name>.md                  8 個專責角色
   skills/<name>/SKILL.md            13 個流程技能
+  hooks/hooks.json                  3 個 hook（路徑用 $SKILL_ROOT fallback）
   scripts/*.py                      10 支，與母版逐位元相同
   assets/report-template.html
   assets/topology-viewer.html
   assets/vendor/mermaid.min.js
 ```
 
-- **不放** `.minimax-plugin/`、manifest、`hooks/`（此套件沒有 hooks 定義）。
+- **不放** `.minimax-plugin/`（無 manifest）。
+- **產物裡的 runtime 名詞要改寫**（母版沿用了 mcode 的 namespace）：
+  `assets/topology-viewer.html` 三處 `code-modernization:modernize-map` → **`modernize-map`**
+  （Antigravity 用裸名；第 98、120 行是使用者可見的「重跑」指示，第 115 行是註解）。
+  `scripts/status.py` 的 `code-modernization: %d systems…` 是**產品標籤，保留**。
 - 圖示（`icon.png`/`icon-dark.png`）不在此目錄（Gemini 技能目錄不要求）。
 - 來源目錄自帶 git repo（歷史屬於 Antigravity 來源）。
 
@@ -178,6 +190,9 @@ grep -rn "\bClaude\b" scripts assets
 
 - 13 個 `skills/<name>/SKILL.md` 的 frontmatter `name` 與目錄同名、`description` 非空。
 - 8 個 `agents/<name>.md` 的 `tools` 是 Antigravity 的工具名。
-- 所有腳本呼叫都帶 `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}` fallback。
+- 所有腳本呼叫都帶 `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}` fallback
+  （含 `hooks/hooks.json` 的三支命令）。
+- `hooks/hooks.json` 可解析、三個 hook 齊全、命令裡沒有 `${PLUGIN_ROOT}`。
+- `assets/topology-viewer.html` 不得殘留 `code-modernization:` 前綴。
 - 根 `SKILL.md` 的步驟表格連結指向 13 個存在的程序檔。
-- 在 Antigravity 內確認：13 個技能以**裸名**被發現、x-ray／狀態列**不會**自動執行（README 有說）。
+- 在 Antigravity 內確認：13 個技能以**裸名**被發現；若 runtime 不支援 hooks，README 有說明。

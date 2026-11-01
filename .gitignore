@@ -24,6 +24,21 @@ node_modules/
 .vscode/
 *.swp
 
+# Local runtime state directories (per-agent tool state, never part of the port)
+.claude/
+.pi/
+.cursor/
+.gemini/
+.codex/
+.opencode/
+.antigravity/
+.mcode/
+.windsurf/
+.aider/
+.continue/
+# NOTE: .claude-plugin/ is NOT ignored — the upstream mirror tracks
+# Claude/code-modernization/.claude-plugin/plugin.json and must keep syncing.
+
 # Local secrets
 .env
 .env.*

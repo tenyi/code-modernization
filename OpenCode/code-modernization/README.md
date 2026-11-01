@@ -181,15 +181,38 @@ working notes, so `analysis/.gitignore` is worth keeping.
 
 ## The plugin
 
+One plugin path loads two parts: the server part (`plugin/index.ts`) and the terminal part
+(`plugin/tui.tsx`). Both fail open — if `python3` is missing, an artifact is malformed or a script
+times out, the turn continues untouched.
+
+### The server part: two hooks
+
 | Hook | What it does |
 | --- | --- |
 | After a completed `read` (`tool` hook) | X-ray: when the agent reads a legacy file, what the analysis already knows about it (callers, data it touches, the rules citing it) rides along as context only the model sees. |
 | At every prompt admission (`session` prompt hook) | The progress line: where the modernization stands and the one next step, kept as a session instruction entry. |
 
-Both are plain `python3` scripts under `scripts/`, run by `plugin/index.ts`. They fail open: if
-`python3` is missing or an artifact is malformed, the turn continues untouched. The plugin also
+Both are plain `python3` scripts under `scripts/`, run by `plugin/index.ts`. The plugin also
 exports the package's own directory to every shell command as `CODE_MODERNIZATION_ROOT`, which is how
 the skills find `scripts/` and `assets/`.
+
+### The terminal part: the panels
+
+| Surface | What it shows |
+| --- | --- |
+| `/modernize-panel` | Where the work stands: the estate map, what needs a person, the next step, and the Session block. |
+| `/modernize-review-pane [flagged\|p0\|all] [filter]` | The rule cards a person should look at, one at a time, with the three verdicts. |
+| `/modernize-sign [name]` | Who approved the brief, and what the approval covers. |
+| The line under the prompt | Where the modernization stands, all the time. |
+
+The Session block follows the work as it happens: the step the turn began with, the calls running
+now, the calls that finished, and the agents at work. The estate map lights the tile of a legacy
+file as it is read or written, so you can see where the work is happening. When several agents fail
+the same way, the panel says so once — one cause across agents usually belongs in the playbook,
+not in each agent.
+
+Panel options come from the workspace's `.code-modernization/panel.json`: `system`, `track`,
+`panel`, `xray`, `commandPrefix`, `legacyDir`.
 
 ## What changed in the port
 
@@ -202,7 +225,7 @@ not:
 | Upstream question pop-ups | the built-in `question` tool. |
 | `Task` / `Agent` subagent types | the built-in `subagent` tool with `agent: "<name>"`, running the eight agents in `agents/`. |
 | Scripted `Workflow` fan-outs (rule mining, portfolio survey, delta catalog, uplift migration, scaffolding, security scan) | the same fan-outs, written as procedure in the skills: the agent starts the subagents with `subagent` calls, in batches, and merges their JSON results the way the workflows merged them. |
-| Live TUI progress pane, review deck and sign-off dialog | the HTML report (`analysis/<system>/REPORT.html`), the interactive map (`TOPOLOGY.html`), the `question` pop-ups, and the two hooks above. |
+| Live TUI progress pane, review deck and sign-off dialog | the same three surfaces, in the terminal: `/modernize-panel`, `/modernize-review-pane` and `/modernize-sign`, plus the progress line under the prompt. |
 | Plugin settings (`userConfig`) | the workspace artifacts and your `opencode.json(c)` rules; no plugin settings panel. |
 | Usage telemetry (whole counts only, on by default) | removed. Nothing is sent anywhere, by this plugin, ever. |
 | `.claude/settings.json`, `CLAUDE.md` | `opencode.json(c)`, `AGENTS.md`. |

@@ -1,5 +1,6 @@
 // The package's plugin: the two hooks the upstream plugin ran from hooks/hooks.json (x-ray and the
-// progress line), plus the root variable the skills resolve their scripts and assets with.
+// progress line), the root variable the skills resolve their scripts and assets with, and the
+// `workflow` tool (the upstream's scripted fan-outs, bound to child sessions here).
 //
 //   1. X-ray          — after a completed `read`, scripts/xray.py adds what the analysis already
 //                       knows about the file, as context only the model sees.
@@ -8,18 +9,23 @@
 //                       instruction entry (OpenCode has no SessionStart hook: the first prompt
 //                       covers session start).
 //   3. Package root   — every shell command gets CODE_MODERNIZATION_ROOT in its environment.
+//   4. Workflow       — `workflow({name, args})` runs one of workflows/*.js; each `agent()` call
+//                       is one child session with the package's agent and the script's schema.
 //
-// All three fail open: no python3, a timeout (5 s, as upstream), malformed output — the turn
-// continues untouched.
+// All four fail open: no python3, a timeout (5 s, as upstream), malformed output, a workflow
+// registration error — the turn continues untouched.
 
 import { spawn } from "node:child_process"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { Plugin } from "@opencode/plugin"
 
+import { registerWorkflowTool, type WorkflowPluginContext } from "./workflow/tool"
+
 const PLUGIN_DIR = fileURLToPath(new URL(".", import.meta.url))
 const PKG_ROOT = dirname(PLUGIN_DIR) // plugin/ -> package root
 const SCRIPTS = join(PKG_ROOT, "scripts")
+const WORKFLOWS = join(PKG_ROOT, "workflows")
 const TIMEOUT_MS = 5000
 const ENTRY_KEY = "code-modernization"
 
@@ -31,7 +37,7 @@ export default Plugin.define({
     async function sessionDirectory(sessionID: string): Promise<string> {
       try {
         const session = await ctx.session.get({ sessionID })
-        if (session?.directory) return session.directory
+        if (session?.location?.directory) return session.location.directory
       } catch {
         // fall through
       }
@@ -107,12 +113,29 @@ export default Plugin.define({
       }
     }
 
+    // The script reads three keys: `path`, `offset`, `limit`. OpenCode's `read` tool sends
+    // `path` (relative to the project root) plus those two, so the names line up today; the
+    // arguments are narrowed to what the script reads anyway, so a tool that names the file
+    // `filePath` still gets an x-ray. The script is the master's, byte for byte.
+    function readInputOf(input: unknown): Record<string, unknown> {
+      const args = typeof input === "object" && input !== null ? (input as Record<string, unknown>) : {}
+      const file = typeof args.filePath === "string" ? args.filePath : typeof args.path === "string" ? args.path : undefined
+      const offset = typeof args.offset === "number" ? args.offset : undefined
+      const limit = typeof args.limit === "number" ? args.limit : undefined
+
+      return {
+        ...(file !== undefined ? { path: file } : {}),
+        ...(offset !== undefined ? { offset } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+      }
+    }
+
     // 1 — X-ray: PostToolUse on `read`, upstream.
     await ctx.tool.hook("execute.after", async (event) => {
       if (event.tool !== "read" || event.status !== "completed") return
       try {
         const cwd = await sessionDirectory(event.sessionID)
-        const notes = additionalContext(await runScript("xray.py", { tool_input: event.input, cwd }, cwd))
+        const notes = additionalContext(await runScript("xray.py", { tool_input: readInputOf(event.input), cwd }, cwd))
         if (!notes) return
         const content = event.result.content
         const prior =
@@ -147,5 +170,14 @@ export default Plugin.define({
     await ctx.shell.hook("create.before", (event) => {
       event.env.CODE_MODERNIZATION_ROOT = PKG_ROOT
     })
+
+    // 4 — The scripted fan-outs: the upstream's `workflows/*.js`, run with
+    // OpenCode's child sessions as their agents. A registration failure must
+    // not take the two hooks above down with it.
+    try {
+      await registerWorkflowTool(ctx as unknown as WorkflowPluginContext, { scriptsDir: WORKFLOWS })
+    } catch {
+      // fail open: the procedures still run, in batches, without the tool
+    }
   },
 })

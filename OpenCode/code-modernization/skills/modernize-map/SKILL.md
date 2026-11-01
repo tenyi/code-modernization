@@ -140,7 +140,7 @@ Unless `$args` contains `--no-describe`, give leaf nodes a `description`: **one
 paragraph of 55 to 90 words**: what the node does in business terms, then what it
 calls, reads, writes or is called by. The viewer shows it in the sidebar.
 
-**Fan-out.** OpenCode has no Workflow tool: the fan-out is done with the `subagent` tool.
+**Fan-out.** There is no workflow script for the map's fan-out: it is done with the `subagent` tool.
 One subagent is one `subagent` call with `agent: "<agent>"`, a `description` naming the
 work item, and a `prompt` that carries everything the subagent needs — it sees none of
 this conversation. Issue several calls in one response (foreground: omit `background`) to

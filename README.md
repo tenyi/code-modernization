@@ -8,11 +8,14 @@
 | `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
-| `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
+| `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版、**以 `Claude/` 為事實來源**移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
 | `OpenCode/code-modernization/` | OpenCode V2（`opencode.ai/v2`） | 以 MiniMax Code 版為母版移植 | 專案 `opencode.json(c)` 的 `skills`/`plugins` 陣列 + agents 目錄，見 [OpenCode 安裝說明](OpenCode/README.md) |
 
 `Claude/` 是**唯讀的上游鏡像**：所有移植的規則都從它推導出來（Claude Code 才有 `AskUserQuestion`、
 `Task`、腳本化 `Workflow`、TypeScript hooks 與 TUI 面板），但倉庫裡這份不作為執行來源。
+這些能力在別的 runtime 要靠移植補回來；其中 **pi 與 OpenCode 版是終端原生**：pi 自己是終端程式，所以
+面板直接畫在終端裡；OpenCode 的 TUI plugin 也一樣。pi 沒有腳本化 workflow runner，所以 extension 補了
+一個，**上游的六支 `workflows/*.js` 原樣跑**（OpenCode 則由 server plugin 補同一件事）。
 補回策略見 [Claude 獨有的能力，各 runtime 怎麼補](#claude-獨有的能力各-runtime-怎麼補)。
 
 Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
@@ -33,14 +36,16 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 - **沒有對應機制的 → 補語義，不補外殼**：面板在別的 runtime 畫不出來，就把它承載的事實做成
   頁面或注入的 context；TS hook 做不到，就用同語義的 Python／命令 hook 重寫。
   **不假裝做到**：做不到的就寫清楚做不到，做得到的就說清楚是快照還是即時的。
+- **runtime 本身能做，就直接做**：pi 自己是終端程式，所以面板不需要退化成頁面——它直接畫在
+  終端裡（見下表的 pi 欄）。這條是 pi 版與其他移植最大的不同。
 
 | 能力 | MiniMax Code（母版） | Antigravity | Codex | pi | OpenCode |
 | --- | --- | --- | --- | --- | --- |
 | `AskUserQuestion` | `ask_user` 問卷 | `ask_question` | 逐條問、寫進產物 | extension 補 `ask_user` | 內建 `question` |
 | `Task`／`Agent` | `task`（`code-modernization:<agent>`） | `invoke_subagent` | 角色指引式代理、循序執行 | extension 補 `task` | 內建 `subagent` |
-| 腳本化 `Workflow` | 技能內的程序＋批次 | 同左 | 循序執行 | 同左 | 同左 |
-| TypeScript hooks | 同步 `command` handler（Python） | `hooks/hooks.json`（runtime 不保證執行） | 無 | extension 補兩支 hook | server plugin（`execute.after` 等） |
-| TUI 面板 | **三個頁面**：`PANEL.html`／`REVIEW_DECK.html`／`SIGNOFF.html`；fleet 由 `SubagentStart`／`SubagentStop` hook 累積後畫進面板 | **Generative UI**：`<agent-embed>` 內嵌的進度看板、審核甲板、簽核卡 | 無 | 無 | 無 |
+| 腳本化 `Workflow` | 技能內的程序＋批次 | 同左 | 循序執行 | **extension 補 `workflow` 執行器**：上游的六支 `workflows/*.js` 原樣跑，runtime 換成 pi 的子代理 | **plugin 補 `workflow` 工具**：同一批上游腳本原樣跑，`agent()` 換成 OpenCode 子 session（工具不可用時退回手動 `subagent` 批次） |
+| TypeScript hooks | 同步 `command` handler（Python） | `hooks/hooks.json`（runtime 不保證執行） | 無 | **extension 本身就是 TS**：x-ray、狀態列、fleet（子代理開關）都在裡面 | server plugin（`execute.after` 等） |
+| TUI 面板 | **三個頁面**：`PANEL.html`／`REVIEW_DECK.html`／`SIGNOFF.html`；fleet 由 `SubagentStart`／`SubagentStop` hook 累積後畫進面板 | **Generative UI**：`<agent-embed>` 內嵌的進度看板、審核甲板、簽核卡 | 無 | **真·終端面板**：`/modernize-panel`（進度面板＋estate map）、`/modernize-review-pane`（規則審核甲板）、`/modernize-sign`（簽核對話框），另有編輯器上方的常駐狀態列 | **真·終端面板**：同一條 plugin 路徑的 TUI part——`/modernize-panel`（進度面板＋estate map）、`/modernize-review-pane`（規則審核甲板）、`/modernize-sign`（簽核對話框），另有輸入框下方的常駐狀態列 |
 | 遙測 | **無** | **無** | **無** | **無** | **無** |
 
 **遙測：任何移植都沒有。** 上游的 `scripts/telemetry.py`／`telemetry.sh` 整支不帶進來，
@@ -94,14 +99,22 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 
 **pi 版**（`Pi/`）
 
-- 以 MiniMax Code 版為母版，13 個技能改成 pi 原生 Agent Skills（`skills/<name>/SKILL.md`），
-  入口是 `/skill:<name>`；8 個代理改成 pi 代理 frontmatter（`tools` 用 `find` 取代 `glob`）
-- **比母版多一個 extension**：pi 內建沒有子代理、問卷與 hook，所以
-  `extensions/code-modernization.ts` 補上 `task`（獨立 pi 子行程跑一個專用代理）、`ask_user`
-  （1–4 題問卷，可複選、可自由輸入）與兩支 hook（x-ray、狀態列）
+- 以 MiniMax Code 版為母版、**以 `Claude/` 為事實來源**：13 個技能改成 pi 原生 Agent Skills
+  （`skills/<name>/SKILL.md`），入口是 `/skill:<name>`；8 個代理改成 pi 代理 frontmatter
+  （`tools` 用 `find` 取代 `glob`）
+- **比母版多一個 extension**（`extensions/code-modernization.ts` + `hooks/`）：pi 內建沒有子代理、
+  問卷、腳本化 workflow 與 hook，所以 extension 補上：
+  - `task`（獨立 pi 子行程跑一個專用代理）
+  - `workflow`（**上游的六支 `workflows/*.js` 原樣跑**：腳本要的 `agent()`／`parallel()`／
+    `pipeline()`／`log()`／`budget` 由 pi 綁定，agent 答案依腳本給的 schema 解析回結構化資料）
+  - `ask_user`（1–4 題問卷，可複選、可自由輸入）
+  - **TUI 面板**（pi 自己是終端程式，所以面板直接畫在終端裡，不是頁面）：
+    `/modernize-panel`（進度面板＋estate map）、`/modernize-review-pane`（規則審核甲板）、
+    `/modernize-sign`（簽核對話框），加上編輯器上方的常駐狀態列
+  - hook（x-ray、狀態列）與 fleet（子代理的開關，餵給面板的 Session 區）
 - extension 另外匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡的 `scripts/` 與 `assets/`
 - 套件格式：pi package（`package.json` + `pi` manifest）+ `skills/` + `agents/` + `extensions/` +
-  `scripts/` + `assets/`
+  `hooks/` + `workflows/` + `scripts/` + `assets/`
 
 **OpenCode 版**（`OpenCode/`）
 
@@ -112,8 +125,21 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 - 母版的 `hooks/hooks.json` 換成套件內 server plugin（`plugin/index.ts`）：tool `execute.after`
   跑 x-ray、session `prompt` hook 跑狀態列（以 session instruction entry 注入）、`shell`
   `create.before` 匯出 `$CODE_MODERNIZATION_ROOT`；全部 fail open、5 秒逾時
-- 套件格式：普通目錄（`skills/` + `agents/` + `plugin/` + `scripts/` + `assets/`），
-  靠 `opencode.json(c)` 的 `skills`/`plugins` 陣列與 agents 目錄載入，無 manifest
+- **腳本化 fan-out 補回來了**：同一份 server plugin 註冊 `workflow` 工具，載入 `workflows/`
+  底下六支上游腳本（原樣執行），`agent()` 換成 OpenCode 子 session；子代理的答案依腳本給的
+  schema 解析，journal 寫在 `.code-modernization/workflow-journal.jsonl` 供 resume
+- **TUI 面板也是同一條 plugin 路徑**：`plugin/tui.tsx`（TUI part）掛三個 `session.panel`
+  （`/modernize-panel`、`/modernize-review-pane`、`/modernize-sign`）與 `prompt.footer.status`
+  狀態列；繪製沿用 pi 版的 reader／map／review／fleet，只把 ANSI 行轉成 OpenTUI span。
+  面板選項讀工作區的 `.code-modernization/panel.json`（OpenCode 沒有 per-plugin 設定畫面）
+- **面板的活事實靠事件**（上游 `tool.call` hook 的對應）：TUI part 訂閱
+  `session.tool.input.started`／`session.tool.called`／`session.tool.success`／`session.tool.failed`
+  與 `session.inbox.enqueued`／`session.skill.activated`——自己的呼叫進 activity 區塊，
+  子 session 的呼叫進 fleet，讀寫 `legacy/` 下的檔案會點亮 estate map 上對應的磚
+  （4 秒褪色，其間每 250 ms 重畫），結果裡有 `[end x-ray]` 就多算一次 x-ray，
+  這一輪用哪個技能則來自提示文字的 `@modernize-…` 提及或技能附件。
+- 套件格式：普通目錄（`skills/` + `agents/` + `plugin/`（含 `tui.tsx`、`tui/`） + `workflows/` +
+  `scripts/` + `assets/`），靠 `opencode.json(c)` 的 `skills`/`plugins` 陣列與 agents 目錄載入，無 manifest
 
 ## 安裝到 pi
 
@@ -206,7 +232,7 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 | [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Antigravity | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT` fallback、無 hooks（chmod guardrail） |
 | [`Codex/PORTING-SPEC.md`](Codex/PORTING-SPEC.md) | Codex | 單一技能 + 13 個程序檔、角色指引式代理、`CODE_MODERNIZATION_ROOT` 自行設定、循序執行、無 hooks |
 | [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md) | pi | 技能發現、extension 補三塊拼圖（`task`／`ask_user`／hooks）、`find` 取代 `glob` |
-| [`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md) | OpenCode | 技能 ID 與 `@` 字串規則、`question`／`subagent`、permissions 封閉清單、server plugin、`shell` 取代 `bash` |
+| [`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md) | OpenCode | 技能 ID 與 `@` 字串規則、`question`／`subagent`、permissions 封閉清單、server plugin 與 `workflow` 工具、TUI part（`session.panel`／狀態列）、`shell` 取代 `bash` |
 
 衝突時以專屬規格優先。日後上游 Anthropic plugin 更新時，**先重做 MiniMax 母版**，再依各專屬規格
 轉到下游 runtime。
@@ -255,4 +281,5 @@ python3 scripts/render_panel.py all --system <某個已存在的系統> --worksp
 ```
 
 OpenCode 版另外跑移植規格 §9 的檢查（py_compile、禁用 token 的全區 grep、
-13 技能／8 代理／plugin 的發現驗證），命令見 [`OpenCode/README.md`](OpenCode/README.md) 的「檢查」節。
+13 技能／8 代理／plugin 與 TUI part 的發現與建置驗證），命令見
+[`OpenCode/README.md`](OpenCode/README.md) 的「檢查」節。

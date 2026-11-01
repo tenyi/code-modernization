@@ -99,9 +99,19 @@ Bound as: <與母版同一行，列出內文用到的每個 $var>。
 
 ## 4. 共用的 Fan-out 契約
 
-沒有任何一個目標 runtime 有腳本化 workflow runner：每個上游 workflow 都是主代理用該 runtime 的
-委派工具（或循序執行）完成的程序。**保留上游契約**（誰執行、什麼順序、帶什麼輸入、回什麼形狀、
-怎麼合併、寫到哪），丟掉 JavaScript。
+上游的 workflow 是**腳本化的 fan-out**：一個 JavaScript 檔案用 `agent()`／`parallel()`／
+`pipeline()` 自己去開一整批子代理，並把結構化的答案收回來。上游的六支 `workflows/*.js` 是
+**所有移植的事實來源**：移植時**保留上游契約**（誰執行、什麼順序、帶什麼輸入、回什麼形狀、
+怎麼合併、寫到哪）。
+
+**兩條路線，由 runtime 決定走哪一條**：
+
+- **runtime 能跑腳本（pi、OpenCode）**：**上游的腳本原樣移植**，配一個 runtime：
+  `agent()` 開一個子代理並把答案解析回腳本要的形狀，`parallel()`／`pipeline()` 依序開，
+  `log()` 回報進度，`budget` 是 token 預算。技能分成兩段：**Method A（workflow 工具，首選）**
+  與 **Method B（委派工具呼叫，後備）**，與上游指令檔的結構相同。
+- **runtime 沒有腳本化 runner（MiniMax Code、Antigravity、Codex）**：每個上游 workflow 都是
+  主代理用該 runtime 的委派工具（或循序執行）完成的程序。**保留上游契約**，丟掉 JavaScript。
 
 各 runtime 的 Fan-out 段落用同一個模板，**只有第一句與參數名不同，其餘逐字相同**：
 
@@ -198,8 +208,15 @@ scripts/make_shards.py    scripts/render_rules.py  scripts/status.py  scripts/xr
 
 ### 6.3 不進套件的東西
 
-上游的 `hooks/views/*.tsx`（TUI 面板，不可移植，改由 HTML 報告取代）、`scripts/telemetry.*`
-（遙測已移除）、`tests/`、`.claude-plugin/`、上游的 `commands/`。
+上游的 `hooks/views/*.tsx`（TUI 面板）、`scripts/telemetry.*`（遙測已移除）、`tests/`、
+`.claude-plugin/`、上游的 `commands/`。
+
+**TUI 面板的兩條路**（見 §4 的同一個原則）：
+
+- **runtime 自己是終端程式（pi）**：面板**直接移植**，用該 runtime 的終端元件畫；
+  畫不出來的介面（上游的 `Raster` 元素）以該 runtime 自己的方式重寫，內容不變。
+- **runtime 畫不出來（其他 runtime）**：面板改成頁面（HTML 報告／內嵌卡片），
+  承載的事實一樣，但**不假裝是即時的終端面板**。
 
 各 runtime 的套件結構見各自的專屬規格。
 

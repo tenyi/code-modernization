@@ -36,7 +36,18 @@ recorded outputs on the target only. That is fine, but label it honestly (Step 0
 
 ## Fan-out
 
-> **Fan-out.** OpenCode has no Workflow tool: the fan-out is done with the `subagent` tool.
+> **Fan-out.** When the `workflow` tool is available (the package's plugin registers it), run this
+> fan-out in one call and render its JSON result:
+>
+> ```
+> workflow({ name: "modernize-uplift-deltas", args: { system: "$system", source: "$source_version", target: "$target_version", projectPattern: "$project_pattern" } })
+> ```
+>
+> It starts the same specialists, in the same order, and returns the same structured cards the
+> manual procedure below produces; write the artifacts from the returned JSON. The manual procedure
+> is the fallback when the tool is not available or the script rejects the arguments.
+>
+> **Manual fallback.** The fan-out is done with the `subagent` tool.
 > One subagent is one `subagent` call with `agent: "<agent>"`, a `description` naming the
 > work item, and a `prompt` that carries everything the subagent needs — it sees none of
 > this conversation. Issue several calls in one response (foreground: omit `background`) to
@@ -382,6 +393,18 @@ depends on. **`deps` is how the fan-out honors the order:** for each unit, the o
 list it depends on. A unit migrates only once every dep has **built**, and a unit whose dependency failed is
 never attempted (its build would fail for the dependency's reason, which would falsely trip the circuit
 breaker). The pilot counts as already satisfied. Never omit `deps` to save typing.
+
+**With the `workflow` tool,** run the whole fan-out in one call and render its JSON result:
+
+```
+workflow({ name: "modernize-uplift-migrate", args: { system: "$system", source: "$source_version",
+          target: "$target_version", units: [{ name, path, deps }, ...] } })
+```
+
+It applies the same dependency order, per-unit build and circuit breaker, and returns
+`remainingUnits`, `failedUnits`, `blockedUnits`, `sharedFileNeeds` and `playbookGaps`; pass the returned
+unit lists straight back as the next call's `units`. Without the tool, the recipe below is the manual
+fallback.
 
 **Validate the list before you launch it** — these are the checks the fan-out made itself:
 

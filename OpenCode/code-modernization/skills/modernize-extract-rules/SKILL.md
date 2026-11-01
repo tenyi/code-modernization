@@ -30,7 +30,18 @@ can anchor the behavior contract.
 
 ## Fan-out
 
-> **Fan-out.** OpenCode has no Workflow tool: the fan-out is done with the `subagent` tool.
+> **Fan-out.** When the `workflow` tool is available (the package's plugin registers it), run this
+> fan-out in one call and render its JSON result:
+>
+> ```
+> workflow({ name: "modernize-extract-rules-mine", args: { system: "$system", modules: <the shard list> } })
+> ```
+>
+> It starts the same specialists, in the same order, and returns the same structured cards the
+> manual procedure below produces; write the artifacts from the returned JSON. The manual procedure
+> is the fallback when the tool is not available or the script rejects the arguments.
+>
+> **Manual fallback.** The fan-out is done with the `subagent` tool.
 > One subagent is one `subagent` call with `agent: "<agent>"`, a `description` naming the
 > work item, and a `prompt` that carries everything the subagent needs — it sees none of
 > this conversation. Issue several calls in one response (foreground: omit `background`) to

@@ -62,3 +62,17 @@ End with three lines:
   The order is preflight, assess, map, extract-rules, review (when rules are flagged for a person), brief (needs approval), then the brief's Phase 1 step
   (`transform`, `uplift` or `reimagine`), then `verify` for what was built, then `harden`. Never call a
   built module done until `verify` says PROVEN and a person has signed it: put `verify` ahead of building the next module.
+
+## 5 — Generative UI Dashboard
+
+Render and surface the interactive Generative UI dashboard for `$system`:
+
+```bash
+python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_widgets.py" progress --system "$system"
+```
+
+Then output the embed tag directly in the conversation response:
+`<agent-embed src="analysis/$system/widgets/progress.html"></agent-embed>`
+
+This provides the user with an interactive live dashboard displaying the 0-8 stage timeline, module build and verification states, subagent fleet status, and the immediate recommended action.
+

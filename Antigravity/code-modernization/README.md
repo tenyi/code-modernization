@@ -6,8 +6,7 @@ It works with any language and any kind of move: a newer version of the same tec
 another one, or a rebuild on a new architecture.
 
 This is the Antigravity port of the upstream
-[Claude Code plugin](https://github.com/anthropics/claude-plugins-official), derived from the
-MiniMax Code port. See *What changed in the port* at the end.
+[Claude Code plugin](https://github.com/anthropics/claude-plugins-official). See *What changed in the port* at the end.
 
 ## Install
 
@@ -19,7 +18,7 @@ Antigravity discovers it on the next session:
 | `SKILL.md` | the entry point: the whole workflow in one skill, with links to the steps below |
 | `skills/<name>/SKILL.md` | the 13 steps, one per skill |
 | `agents/<name>.md` | the 8 specialists the steps delegate to |
-| `scripts/`, `assets/` | the report, the proof, the rule renderer and the templates |
+| `scripts/`, `assets/` | the report, proof, rule renderer, Generative UI widgets (`assets/widgets/`) and `render_widgets.py` |
 
 Requirements: `python3` on `PATH` (the report, the proof and the rule renderer are Python). Without
 it the skills still run, but the artifacts they generate are not produced — the agent says so in one
@@ -190,7 +189,7 @@ not:
 | `AskUserQuestion` pop-ups | the `ask_question` tool. |
 | `Task` / `Agent` subagent types | `invoke_subagent`, with the eight specialists in `agents/`. |
 | Scripted `Workflow` fan-outs (rule mining, portfolio survey, delta catalog, uplift migration, scaffolding, security scan) | the same fan-outs, written as procedure in the skills: the agent starts the specialists with `invoke_subagent`, in batches, and merges their JSON results the way the workflows merged them. |
-| Live TUI progress pane, review deck and sign-off dialog | the HTML report (`analysis/<system>/REPORT.html`), the interactive map (`TOPOLOGY.html`), the `ask_question` pop-ups, and the hook scripts above. |
+| Live TUI progress pane, review deck and sign-off dialog | Antigravity Generative UI (`<agent-embed>`): Live Progress Dashboard (`progress.html`), Business Rules Review Deck (`review_deck.html`), and Verification Sign-Off Card (`sign_off.html`) powered by `scripts/render_widgets.py`, plus the standalone HTML report (`REPORT.html`) and interactive map (`TOPOLOGY.html`). |
 | Plugin settings (`userConfig`) | the workspace artifacts and Antigravity's workspace guardrails; no plugin settings panel. |
 | Usage telemetry (whole counts only, on by default) | removed. Nothing is sent anywhere, by this plugin, ever. |
 | `.claude/settings.json`, `CLAUDE.md` | Antigravity workspace settings, `AGENTS.md`. |

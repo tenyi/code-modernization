@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商業規則審核甲板 (Business Rules Review Deck)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: 'var(--bg)',
+            surface: 'var(--bg-card)',
+            border: 'var(--border)',
+            textMain: 'var(--text)',
+            textMuted: 'var(--text-muted)',
+            brand: 'var(--primary)',
+            brandSuccess: 'var(--success)',
+            brandWarning: 'var(--warning)',
+            brandDanger: 'var(--danger)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-card: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --primary: #0284c7;
+        --success: #059669;
+        --warning: #d97706;
+        --danger: #dc2626;
+      }
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .glass-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+    kbd {
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.75rem;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-6 transition-colors duration-200">
+  <div class="max-w-4xl mx-auto space-y-5" id="deck-app">
+    
+    <!-- 頂部審核甲板進度列 -->
+    <header class="glass-card rounded-2xl p-5 shadow-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              SME 審核
+            </span>
+            <h1 class="text-xl font-bold tracking-tight">商業規則審核甲板 (Review Deck)</h1>
+          </div>
+          <p class="text-xs text-textMuted mt-1">
+            由領域專家 (SME) 確認代碼中提煉的規格、疑點與邊界行為。
+          </p>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-2xl font-bold font-mono" id="card-counter">1 / 1</div>
+            <div class="text-[11px] text-textMuted">審查卡片進度</div>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-semibold">
+            <span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" id="stat-confirmed">0 確定</span>
+            <span class="px-2 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20" id="stat-wrong">0 錯誤</span>
+            <span class="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20" id="stat-discuss">0 討論</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 篩選列 -->
+      <div class="mt-4 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-textMuted">範圍篩選：</span>
+          <select id="filter-scope" class="bg-surface border border-border rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-sky-500 text-text">
+            <option value="all">全部規則 (All Rules)</option>
+            <option value="flagged" selected>待確認 / 疑點 (Flagged & Defects)</option>
+            <option value="p0">核心最高優先級 (P0 Only)</option>
+            <option value="unreviewed">尚未審核 (Unreviewed)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-export-json" class="px-2.5 py-1 rounded-lg border border-border hover:bg-surface text-textMuted hover:text-text transition flex items-center gap-1">
+            💾 匯出審查決策 (JSON)
+          </button>
+          <button id="btn-copy-instruction" class="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition flex items-center gap-1 font-medium">
+            📋 複製審核結果給助理
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 規則主卡片 -->
+    <main class="glass-card rounded-2xl p-6 sm:p-8 shadow-xl relative min-h-[420px] flex flex-col justify-between" id="rule-card">
+      
+      <!-- 卡片內容區 -->
+      <div class="space-y-5">
+        
+        <!-- 標頭：編號、標題與標籤 -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-lg font-bold text-sky-400 px-2.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20" id="rule-id">
+              RULE-001
+            </span>
+            <h2 class="text-lg font-bold leading-snug" id="rule-name">規則名稱載入中...</h2>
+          </div>
+          <div class="flex items-center gap-2" id="rule-badges">
+            <!-- 優先級與分類標籤 -->
+          </div>
+        </div>
+
+        <!-- 疑義與缺陷警告 (若有) -->
+        <div id="defect-container" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs sm:text-sm">
+          <div class="font-bold flex items-center gap-1.5 mb-1 text-rose-400">
+            ⚠️ 疑似代碼缺陷或規格矛盾 (Suspected Defect)
+          </div>
+          <p id="defect-text" class="leading-relaxed"></p>
+        </div>
+
+        <!-- 白話解說 (Plain English) -->
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-textMuted mb-1">業務白話說明 (Plain English)</div>
+          <p class="text-sm sm:text-base leading-relaxed text-slate-200" id="rule-plain">
+            說明文字...
+          </p>
+        </div>
+
+        <!-- Given / When / Then 規格結構 -->
+        <div class="p-4 rounded-xl bg-surface/80 border border-border space-y-2 font-mono text-xs sm:text-sm">
+          <div class="text-[11px] font-sans font-bold uppercase tracking-wider text-textMuted mb-2">結構化行為規格 (BDD Specification)</div>
+          <div class="flex gap-2">
+            <span class="text-sky-400 font-bold shrink-0">Given</span>
+            <span class="text-slate-300" id="rule-given">-</span>
+          </div>
+          <div class="flex gap-2">
+            <span class="text-amber-400 font-bold shrink-0">When </span>
+            <span class="text-slate-300" id="rule-when">-</span>
+          </div>
+          <div class="flex gap-2">
+            <span class="text-emerald-400 font-bold shrink-0">Then </span>
+            <span class="text-slate-300" id="rule-then">-</span>
+          </div>
+          <div class="flex gap-2 hidden" id="rule-and-container">
+            <span class="text-purple-400 font-bold shrink-0">And  </span>
+            <span class="text-slate-300" id="rule-and">-</span>
+          </div>
+        </div>
+
+        <!-- 參數、邊界與原始碼來源 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 rounded-lg bg-surface/50 border border-border">
+            <span class="text-textMuted font-semibold">參數 / 計算基底：</span>
+            <span class="text-slate-300 ml-1" id="rule-params">無</span>
+          </div>
+          <div class="p-3 rounded-lg bg-surface/50 border border-border">
+            <span class="text-textMuted font-semibold">邊界案例：</span>
+            <span class="text-slate-300 ml-1" id="rule-edge-cases">無</span>
+          </div>
+        </div>
+
+        <!-- 出處引用與原始碼展開 -->
+        <div class="pt-2">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5 text-textMuted font-mono">
+              <span>出處代碼：</span>
+              <span class="text-sky-400 hover:underline cursor-pointer" id="rule-source">path/to/source.java:10</span>
+            </div>
+            <button id="btn-toggle-source" class="text-xs text-sky-400 hover:underline">
+              展開原始碼片段
+            </button>
+          </div>
+          <pre id="source-block" class="hidden mt-2 p-3 rounded-lg bg-slate-950 border border-border text-xs font-mono text-slate-300 overflow-x-auto max-h-48"></pre>
+        </div>
+
+      </div>
+
+      <!-- 底部判決與操作列 -->
+      <div class="mt-8 pt-5 border-t border-border space-y-4">
+        
+        <!-- 當前裁決狀態與評註輸入 -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs text-textMuted">當前決策：</span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded" id="current-verdict-badge">未審核</span>
+          </div>
+          <input 
+            type="text" 
+            id="input-reviewer-note" 
+            placeholder="輸入專家審查評註 (選填，例如：規則正確，但在負數時需補齊例外處理)" 
+            class="flex-1 bg-surface border border-border rounded-xl px-3 py-1.5 text-xs text-text placeholder-textMuted focus:ring-1 focus:ring-sky-500 focus:outline-none"
+          />
+        </div>
+
+        <!-- 快速判決動作按鈕 -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <button id="btn-back" class="px-3 py-1.5 rounded-xl border border-border hover:bg-surface text-xs font-medium transition flex items-center gap-1">
+              <kbd>←</kbd> 上一張
+            </button>
+            <button id="btn-skip" class="px-3 py-1.5 rounded-xl border border-border hover:bg-surface text-xs font-medium transition flex items-center gap-1">
+              跳過 <kbd>→</kbd>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-confirm" class="px-4 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5">
+              <span>確認無誤</span> <kbd>1</kbd>
+            </button>
+            <button id="btn-wrong" class="px-4 py-1.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500/30 text-xs font-bold transition flex items-center gap-1.5">
+              <span>規則錯誤</span> <kbd>2</kbd>
+            </button>
+            <button id="btn-discuss" class="px-4 py-1.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold transition flex items-center gap-1.5">
+              <span>需再討論</span> <kbd>3</kbd>
+            </button>
+            <button id="btn-undo" class="px-3 py-1.5 rounded-xl border border-border text-textMuted hover:text-text hover:bg-surface text-xs transition">
+              復原 <kbd>U</kbd>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    // 注入或預設資料
+    window.REVIEW_DECK_DATA = window.REVIEW_DECK_DATA || {
+      system: "demo-system",
+      rules: [
+        {
+          id: "RULE-001",
+          name: "月度帳單結算免息天數判定",
+          category: "Calculation",
+          priority: "P0",
+          confidence: "High",
+          source: "billing/StatementService.java:142-168",
+          sourceCode: "// 免息天數計算邏輯\nif (account.isVip()) {\n  graceDays = 45;\n} else {\n  graceDays = 30;\n}\nreturn stmtDate.plusDays(graceDays);",
+          plainEnglish: "VIP 用戶享有 45 天免息還款週期；一般用戶為 30 天。逾期起算日自結帳日起算。",
+          given: "用戶持有有效帳戶且產生當期結算單",
+          when: "批次執行月度出帳作業",
+          then: "依據用戶等級給予正確免息天數",
+          and: "利息計算自結算日後第 (graceDays + 1) 天起計",
+          parameters: "VIP 免息天數 = 45, 一般免息天數 = 30",
+          edgeCases: "閏年二月邊界、帳戶在結帳當天變更等級",
+          suspectedDefect: null
+        },
+        {
+          id: "RULE-002",
+          name: "負餘額退款風控檢核攔截",
+          category: "Validation",
+          priority: "P0",
+          confidence: "Medium",
+          source: "risk/RefundGuard.java:88-112",
+          sourceCode: "if (amount < 0) {\n  throw new IllegalArgumentException(\"Negative refund\");\n}\nif (balance - amount < -10000) {\n  // 疑似缺陷：允許透支至負一萬元？\n  alertRiskTeam();\n}",
+          plainEnglish: "退款金額不得為負數，若餘額扣抵後低於門檻，應觸發風控警報。",
+          given: "用戶申請餘額退款",
+          when: "提交退款審批請求",
+          then: "系統檢核退款金額與餘額上限",
+          and: null,
+          parameters: "警戒門檻 = -10,000",
+          edgeCases: "併發退款請求重複扣抵",
+          suspectedDefect: "代碼中允許餘額扣抵至負數（-10,000），與銀行合規手冊要求『餘額不足不得退款』矛盾。"
+        }
+      ],
+      ledger: {} // { "RULE-001": { verdict: "confirmed", note: "", at: "2026-11-01" } }
+    };
+
+    let currentIndex = 0;
+    let filteredRules = [];
+    const ledger = Object.assign({}, window.REVIEW_DECK_DATA.ledger);
+
+    function getFilteredRules() {
+      const scope = document.getElementById('filter-scope').value;
+      const all = window.REVIEW_DECK_DATA.rules || [];
+      if (scope === 'p0') return all.filter(r => r.priority === 'P0');
+      if (scope === 'flagged') return all.filter(r => r.suspectedDefect || r.confidence === 'Low' || r.confidence === 'Medium');
+      if (scope === 'unreviewed') return all.filter(r => !ledger[r.id]);
+      return all;
+    }
+
+    function updateStats() {
+      const all = window.REVIEW_DECK_DATA.rules || [];
+      let conf = 0, wrg = 0, disc = 0;
+      Object.values(ledger).forEach(v => {
+        if (v.verdict === 'confirmed') conf++;
+        else if (v.verdict === 'wrong') wrg++;
+        else if (v.verdict === 'discuss') disc++;
+      });
+      document.getElementById('stat-confirmed').textContent = conf + " 確定";
+      document.getElementById('stat-wrong').textContent = wrg + " 錯誤";
+      document.getElementById('stat-discuss').textContent = disc + " 討論";
+    }
+
+    function renderCard() {
+      filteredRules = getFilteredRules();
+      if (filteredRules.length === 0) {
+        document.getElementById('card-counter').textContent = "0 / 0";
+        document.getElementById('rule-id').textContent = "無符合規則";
+        document.getElementById('rule-name').textContent = "目前篩選條件下沒有待審核規則";
+        document.getElementById('rule-plain').textContent = "請切換範圍篩選至『全部規則』。";
+        return;
+      }
+
+      if (currentIndex >= filteredRules.length) currentIndex = filteredRules.length - 1;
+      if (currentIndex < 0) currentIndex = 0;
+
+      const rule = filteredRules[currentIndex];
+      document.getElementById('card-counter').textContent = (currentIndex + 1) + " / " + filteredRules.length;
+      document.getElementById('rule-id').textContent = rule.id;
+      document.getElementById('rule-name').textContent = rule.name;
+      document.getElementById('rule-plain').textContent = rule.plainEnglish || "無白話解說";
+
+      // 標籤
+      const badges = document.getElementById('rule-badges');
+      badges.innerHTML = `
+        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-surface border border-border">${rule.category || 'Rule'}</span>
+        <span class="px-2 py-0.5 rounded text-xs font-bold ${rule.priority === 'P0' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-surface border border-border text-textMuted'}">${rule.priority || 'P1'}</span>
+        <span class="px-2 py-0.5 rounded text-xs bg-surface border border-border text-textMuted">信心度 ${rule.confidence || 'Medium'}</span>
+      `;
+
+      // 缺陷警告
+      const defectBox = document.getElementById('defect-container');
+      if (rule.suspectedDefect) {
+        defectBox.classList.remove('hidden');
+        document.getElementById('defect-text').textContent = rule.suspectedDefect;
+      } else {
+        defectBox.classList.add('hidden');
+      }
+
+      // BDD 規格
+      document.getElementById('rule-given').textContent = rule.given || '-';
+      document.getElementById('rule-when').textContent = rule.when || '-';
+      document.getElementById('rule-then').textContent = rule.then || '-';
+      const andContainer = document.getElementById('rule-and-container');
+      if (rule.and) {
+        andContainer.classList.remove('hidden');
+        document.getElementById('rule-and').textContent = rule.and;
+      } else {
+        andContainer.classList.add('hidden');
+      }
+
+      document.getElementById('rule-params').textContent = rule.parameters || '無';
+      document.getElementById('rule-edge-cases').textContent = rule.edgeCases || '無';
+      document.getElementById('rule-source').textContent = rule.source || '無出處標記';
+
+      const sourceBlock = document.getElementById('source-block');
+      sourceBlock.textContent = rule.sourceCode || "// 未擷取原始碼片段";
+      sourceBlock.classList.add('hidden');
+      document.getElementById('btn-toggle-source').textContent = "展開原始碼片段";
+
+      // 裁決狀態與評註
+      const currentVerdict = ledger[rule.id];
+      const verdictBadge = document.getElementById('current-verdict-badge');
+      const noteInput = document.getElementById('input-reviewer-note');
+      
+      if (currentVerdict) {
+        noteInput.value = currentVerdict.note || '';
+        if (currentVerdict.verdict === 'confirmed') {
+          verdictBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+          verdictBadge.textContent = '已確認 (Confirmed)';
+        } else if (currentVerdict.verdict === 'wrong') {
+          verdictBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40';
+          verdictBadge.textContent = '標示錯誤 (Wrong)';
+        } else {
+          verdictBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40';
+          verdictBadge.textContent = '待討論 (Discuss)';
+        }
+      } else {
+        noteInput.value = '';
+        verdictBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-surface border border-border text-textMuted';
+        verdictBadge.textContent = '尚未審核';
+      }
+
+      updateStats();
+    }
+
+    function recordVerdict(verdict) {
+      if (filteredRules.length === 0) return;
+      const rule = filteredRules[currentIndex];
+      const note = document.getElementById('input-reviewer-note').value.trim();
+      ledger[rule.id] = {
+        verdict: verdict,
+        note: note,
+        at: new Date().toISOString()
+      };
+      updateStats();
+      // 自動前進下一張
+      if (currentIndex < filteredRules.length - 1) {
+        currentIndex++;
+      }
+      renderCard();
+    }
+
+    // 事件監聽
+    document.getElementById('btn-confirm').onclick = () => recordVerdict('confirmed');
+    document.getElementById('btn-wrong').onclick = () => recordVerdict('wrong');
+    document.getElementById('btn-discuss').onclick = () => recordVerdict('discuss');
+    document.getElementById('btn-undo').onclick = () => {
+      if (filteredRules.length === 0) return;
+      const rule = filteredRules[currentIndex];
+      delete ledger[rule.id];
+      renderCard();
+    };
+    document.getElementById('btn-back').onclick = () => {
+      if (currentIndex > 0) { currentIndex--; renderCard(); }
+    };
+    document.getElementById('btn-skip').onclick = () => {
+      if (currentIndex < filteredRules.length - 1) { currentIndex++; renderCard(); }
+    };
+
+    document.getElementById('btn-toggle-source').onclick = () => {
+      const block = document.getElementById('source-block');
+      const btn = document.getElementById('btn-toggle-source');
+      if (block.classList.contains('hidden')) {
+        block.classList.remove('hidden');
+        btn.textContent = "收合原始碼片段";
+      } else {
+        block.classList.add('hidden');
+        btn.textContent = "展開原始碼片段";
+      }
+    };
+
+    document.getElementById('filter-scope').onchange = () => {
+      currentIndex = 0;
+      renderCard();
+    };
+
+    // 鍵盤快捷鍵 (1, 2, 3, ArrowLeft, ArrowRight, u)
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === '1') recordVerdict('confirmed');
+      else if (e.key === '2') recordVerdict('wrong');
+      else if (e.key === '3') recordVerdict('discuss');
+      else if (e.key === 'ArrowLeft') document.getElementById('btn-back').click();
+      else if (e.key === 'ArrowRight') document.getElementById('btn-skip').click();
+      else if (e.key.toLowerCase() === 'u') document.getElementById('btn-undo').click();
+    });
+
+    // 匯出 JSON
+    document.getElementById('btn-export-json').onclick = () => {
+      const payload = {
+        system: window.REVIEW_DECK_DATA.system,
+        updatedAt: new Date().toISOString(),
+        reviews: ledger
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `RULE_REVIEWS_${window.REVIEW_DECK_DATA.system}.json`;
+      a.click();
+    };
+
+    // 複製指令
+    document.getElementById('btn-copy-instruction').onclick = () => {
+      const text = `我已完成商業規則審核甲板，裁決結果如下：\n` + JSON.stringify(ledger, null, 2);
+      navigator.clipboard.writeText(text).then(() => {
+        alert("已複製審核結論至剪貼簿！可直接貼在對話框回傳給 Antigravity。");
+      });
+    };
+
+    renderCard();
+  </script>
+</body>
+</html>

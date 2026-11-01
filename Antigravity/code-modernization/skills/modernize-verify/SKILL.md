@@ -131,6 +131,19 @@ and `VERIFICATION.json`; exit 1 only means "not PROVEN". Show the user the verdi
 the P0 rule table, any folder listed as test tooling (not judged), **what this does not prove**, and the blank sign-off block. Do not soften a reason or change a verdict; if you think
 a rule is wrong, say so and leave the file as it is.
 
+## 6 — Interactive Sign-Off Card
+
+Render and surface the interactive Generative UI Sign-Off card:
+
+```bash
+python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_widgets.py" signoff --system "$system"
+```
+
+Output the embed tag directly in your response:
+`<agent-embed src="analysis/$system/widgets/sign_off.html"></agent-embed>`
+
+This card displays the overall PROVEN verdict banner, the 5-point quality evidence checklist, per-module proof status, and the digital sign-off form for technical leads and architects.
+
 ## Finish
 
 Refresh the report (`python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is

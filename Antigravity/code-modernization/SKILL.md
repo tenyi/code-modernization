@@ -62,12 +62,18 @@ description: >-
 
 ## 執行規範與工具調用 (Antigravity Integration)
 
-1. **使用者問答互動**：
-   - 當需要使用者抉擇或確認時，使用 `ask_question` 工具進行彈出式選擇或確認，避免在純聊天文字中隨意發散。
-2. **子代理人協同**：
-   - 執行耗時的代碼深度分析、規則萃取與審查時，使用 `invoke_subagent` 啟動背景 Specialist 代理人（如 `Legacy Analyst`, `Test Engineer`, `Architecture Critic` 等）。
-3. **安全沙箱防護**：
+1. **Generative UI 互動面板 (<agent-embed>)**：
+   - 本套件支援 Antigravity 原生 Generative UI 規範，於對話中動態嵌入即時互動面板：
+     - **即時進度看板**：`<agent-embed src="analysis/<system>/widgets/progress.html"></agent-embed>`（里程碑 0-8 階段軌、模組證明與 Fleet 代理人監控）。
+     - **卡片式規則審核甲板**：`<agent-embed src="analysis/<system>/widgets/review_deck.html"></agent-embed>`（Given/When/Then 規則卡輪播、缺陷高亮、快捷鍵裁決與 JSON 匯出）。
+     - **終審驗證簽核卡**：`<agent-embed src="analysis/<system>/widgets/sign_off.html"></agent-embed>`（PROVEN 裁決徽章、5 大黃金證據檢驗清單與數位簽核表單）。
+   - 透過 `python3 scripts/render_widgets.py <progress|review|signoff|all> --system <name>` 進行一鍵組裝與渲染。
+2. **使用者問答互動**：
+   - 當需要使用者抉擇或確認時，使用 `ask_question` 工具進行彈出式選擇或確認，並搭配 Generative UI 面板呈現完整脈絡。
+3. **子代理人協同**：
+   - 執行耗時的代碼深度分析、規則萃取與審查時，使用 `invoke_subagent` 啟動背景 Specialist 代理人（包含 8 個專業角色，批次上限 8，嚴格契約與 Reactive Wakeup）。
+4. **安全沙箱防護**：
    - 所有分析產出寫入 `analysis/<system>/`，現代化程式碼寫入 `modernized/`。
    - 嚴格維持 `legacy/<system>/` 原始碼樹為唯讀狀態。
-4. **輔助腳本調用**：
-   - 專案附帶之報告與驗證工具（位於 `scripts/`）均以 Python 3 標準庫實現，調用時優先尋找技能目錄下的腳本。
+5. **輔助腳本調用**：
+   - 專案附帶之報告、渲染與驗證工具（位於 `scripts/`）均以 Python 3 標準庫實現，遵循 `uv` 規範，不依賴龐雜外部套件。

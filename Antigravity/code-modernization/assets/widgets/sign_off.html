@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>現代化工程終審裁決與簽核卡 (Modernization Sign-Off Card)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: 'var(--bg)',
+            surface: 'var(--bg-card)',
+            border: 'var(--border)',
+            textMain: 'var(--text)',
+            textMuted: 'var(--text-muted)',
+            brand: 'var(--primary)',
+            brandSuccess: 'var(--success)',
+            brandWarning: 'var(--warning)',
+            brandDanger: 'var(--danger)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-card: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --primary: #0284c7;
+        --success: #059669;
+        --warning: #d97706;
+        --danger: #dc2626;
+      }
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .glass-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+    .badge-glow {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-6 transition-colors duration-200">
+  <div class="max-w-4xl mx-auto space-y-6" id="signoff-app">
+    
+    <!-- 終審裁決橫幅 (Verdict Banner) -->
+    <header class="glass-card rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden" id="verdict-banner">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" id="sign-track">
+              REWRITE
+            </span>
+            <h1 class="text-2xl font-bold tracking-tight" id="sign-system">現代化成果終審簽核</h1>
+          </div>
+          <p class="text-sm text-textMuted mt-1" id="sign-target">目標架構：現代化乾淨微服務架構</p>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="px-5 py-3 rounded-2xl border text-center transition badge-glow" id="verdict-chip-box">
+            <div class="text-2xl font-black tracking-wider" id="verdict-text">PROVEN</div>
+            <div class="text-[11px] font-semibold text-textMuted mt-0.5" id="verdict-sub">全數品質驗證達標</div>
+          </div>
+        </div>
+      </div>
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    </header>
+
+    <!-- 5 大黃金證據檢驗清單 -->
+    <section class="glass-card rounded-2xl p-6 shadow-lg space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold">5 大黃金工程品質證據檢核 (Proof Checklist)</h2>
+          <p class="text-xs text-textMuted">依據現代化工程規範嚴格檢驗之關鍵證據矩陣</p>
+        </div>
+        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-surface border border-border" id="evidence-summary">5 / 5 檢驗通過</span>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 pt-2" id="evidence-items">
+        <!-- 由 JS 動態注入 5 項檢驗 -->
+      </div>
+    </section>
+
+    <!-- 模組證明明細矩陣 -->
+    <section class="glass-card rounded-2xl p-6 shadow-lg space-y-4">
+      <h2 class="text-lg font-bold">服務模組證明明細</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-xs uppercase bg-surface/50 border-b border-border text-textMuted font-semibold">
+            <tr>
+              <th class="py-2.5 px-3">模組目錄</th>
+              <th class="py-2.5 px-3">單元測試與覆蓋</th>
+              <th class="py-2.5 px-3">規則覆蓋</th>
+              <th class="py-2.5 px-3 text-right">證明裁決</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border" id="sign-modules-tbody">
+            <!-- 模組明細 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 架構師數位簽署區塊 -->
+    <footer class="glass-card rounded-2xl p-6 sm:p-8 shadow-xl space-y-5 border-sky-500/30 bg-gradient-to-br from-surface to-sky-950/20">
+      <div>
+        <h2 class="text-lg font-bold flex items-center gap-2">
+          <span>✍️ 架構師與負責人數位核准簽署 (Sign-Off)</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">正式簽章</span>
+        </h2>
+        <p class="text-xs text-textMuted mt-1">
+          簽署後將正式核准現代化成果，並將簽名記錄寫入 MODERNIZATION_BRIEF.md 與 VERIFICATION.json。
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-textMuted mb-1">簽署人姓名 (Approver Name)</label>
+          <input type="text" id="signer-name" placeholder="例如：張大明 / Lead Architect" class="w-full bg-surface border border-border rounded-xl px-3.5 py-2 text-sm text-text focus:ring-1 focus:ring-sky-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-textMuted mb-1">擔綱職稱 / 角色 (Role)</label>
+          <input type="text" id="signer-role" placeholder="例如：Chief Software Architect" class="w-full bg-surface border border-border rounded-xl px-3.5 py-2 text-sm text-text focus:ring-1 focus:ring-sky-500 focus:outline-none" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-textMuted mb-1">審查總結與發布備註 (Approval Notes)</label>
+        <textarea id="signer-notes" rows="2" placeholder="例如：新架構已完成行為等價比對與 100% 單元測試，符合生產環境發布標準。" class="w-full bg-surface border border-border rounded-xl px-3.5 py-2 text-sm text-text focus:ring-1 focus:ring-sky-500 focus:outline-none"></textarea>
+      </div>
+
+      <div class="pt-2 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-xs text-textMuted font-mono" id="signed-status">
+          尚未簽署
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="btn-export-proof" class="px-3.5 py-2 rounded-xl border border-border hover:bg-surface text-xs font-semibold text-textMuted hover:text-text transition">
+            📄 匯出證明包 (proof_pack.json)
+          </button>
+          <button id="btn-submit-sign" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow-lg flex items-center gap-1.5">
+            <span>確認核准簽署 (Approve & Sign)</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    window.SIGN_DATA = window.SIGN_DATA || {
+      system: "demo-system",
+      target: "Clean TypeScript Microservices",
+      track: "rewrite",
+      verdict: "PROVEN", // PROVEN | PARTLY PROVEN | NOT PROVEN
+      evidences: [
+        {
+          title: "1. 行為基準比對 (Baseline Parity)",
+          desc: "對比現代化前後核心函式行為與輸出，無非預期偏離 (0 divergence)。",
+          passed: true
+        },
+        {
+          title: "2. 單元與整合測試覆蓋 (Test Coverage)",
+          desc: "現代化新模組測試套件 100% 通過，回歸測試綠燈。",
+          passed: true
+        },
+        {
+          title: "3. 商業規則落實 (Rules Coverage)",
+          desc: "所有 P0/P1 商業規則皆已提煉並經 SME 審核，完全映射至新實作。",
+          passed: true
+        },
+        {
+          title: "4. 安全與架構加固 (Security Hardening)",
+          desc: "0 High/Critical 漏洞，依賴套件全數經審計，無硬編碼密鑰。",
+          passed: true
+        },
+        {
+          title: "5. 邊界與極值健壯性證明 (Boundary Proof)",
+          desc: "針對負數、並發衝突與異常邊界之模糊測試全數通過。",
+          passed: true
+        }
+      ],
+      modules: [
+        { dir: "core-domain", tests: "32/32 pass", rules: "18 rules covered", proof: "proven" },
+        { dir: "billing-service", tests: "24/24 pass", rules: "14 rules covered", proof: "proven" },
+        { dir: "auth-gateway", tests: "18/18 pass", rules: "8 rules covered", proof: "proven" }
+      ],
+      signer: null
+    };
+
+    function renderSignoff(data) {
+      document.getElementById('sign-system').textContent = data.system + " 現代化工程終審簽核";
+      document.getElementById('sign-track').textContent = (data.track || 'rewrite').toUpperCase();
+      document.getElementById('sign-target').textContent = "目標架構：" + (data.target || "現代化架構");
+
+      // 裁決標籤
+      const verdictBox = document.getElementById('verdict-chip-box');
+      const verdictText = document.getElementById('verdict-text');
+      const verdictSub = document.getElementById('verdict-sub');
+
+      if (data.verdict === 'PROVEN') {
+        verdictBox.className = "px-5 py-3 rounded-2xl border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-center badge-glow";
+        verdictText.textContent = "PROVEN";
+        verdictSub.textContent = "全數品質驗證達標";
+      } else if (data.verdict === 'PARTLY PROVEN') {
+        verdictBox.className = "px-5 py-3 rounded-2xl border bg-amber-500/10 text-amber-400 border-amber-500/30 text-center";
+        verdictText.textContent = "PARTLY PROVEN";
+        verdictSub.textContent = "部分驗證尚待補充";
+      } else {
+        verdictBox.className = "px-5 py-3 rounded-2xl border bg-rose-500/10 text-rose-400 border-rose-500/30 text-center";
+        verdictText.textContent = "NOT PROVEN";
+        verdictSub.textContent = "尚未達成品質門檻";
+      }
+
+      // 證據清單
+      const evidences = data.evidences || [];
+      const passedCount = evidences.filter(e => e.passed).length;
+      document.getElementById('evidence-summary').textContent = `${passedCount} / ${evidences.length} 檢驗通過`;
+      
+      const evidenceContainer = document.getElementById('evidence-items');
+      evidenceContainer.innerHTML = '';
+      evidences.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = "flex items-start gap-3 p-3.5 rounded-xl border transition " + 
+          (ev.passed ? "bg-emerald-500/5 border-emerald-500/20" : "bg-rose-500/5 border-rose-500/20");
+        item.innerHTML = `
+          <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${ev.passed ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'}">
+            ${ev.passed ? '✓' : '✗'}
+          </div>
+          <div>
+            <div class="text-sm font-bold ${ev.passed ? 'text-slate-200' : 'text-rose-400'}">${ev.title}</div>
+            <div class="text-xs text-textMuted mt-0.5 leading-relaxed">${ev.desc}</div>
+          </div>
+        `;
+        evidenceContainer.appendChild(item);
+      });
+
+      // 模組矩陣
+      const tbody = document.getElementById('sign-modules-tbody');
+      tbody.innerHTML = '';
+      (data.modules || []).forEach(m => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-surface/30 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-mono font-medium">${m.dir}</td>
+          <td class="py-3 px-3 text-emerald-400 font-semibold">${m.tests}</td>
+          <td class="py-3 px-3 text-slate-300">${m.rules}</td>
+          <td class="py-3 px-3 text-right">
+            <span class="px-2 py-0.5 rounded text-xs font-bold ${m.proof === 'proven' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'}">
+              ${(m.proof || 'none').toUpperCase()}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 已簽名狀態
+      if (data.signer) {
+        document.getElementById('signer-name').value = data.signer.name || '';
+        document.getElementById('signer-role').value = data.signer.role || '';
+        document.getElementById('signer-notes').value = data.signer.notes || '';
+        document.getElementById('signed-status').textContent = `✓ 已於 ${data.signer.at} 由 ${data.signer.name} 簽核`;
+        document.getElementById('signed-status').className = 'text-xs text-emerald-400 font-semibold font-mono';
+      }
+    }
+
+    // 簽名提交按鈕
+    document.getElementById('btn-submit-sign').onclick = () => {
+      const name = document.getElementById('signer-name').value.trim();
+      const role = document.getElementById('signer-role').value.trim();
+      const notes = document.getElementById('signer-notes').value.trim();
+
+      if (!name) {
+        alert("請輸入簽署人姓名！");
+        return;
+      }
+
+      const signPayload = {
+        name: name,
+        role: role || "Lead Architect",
+        notes: notes || "審查通過",
+        at: new Date().toISOString()
+      };
+
+      document.getElementById('signed-status').textContent = `✓ 已於 ${signPayload.at.slice(0, 10)} 由 ${signPayload.name} 簽核`;
+      document.getElementById('signed-status').className = 'text-xs text-emerald-400 font-semibold font-mono';
+
+      const markdownBlock = `Approved by: ${signPayload.name} (${signPayload.role})\nDate: ${signPayload.at}\nNotes: ${signPayload.notes}`;
+      navigator.clipboard.writeText(markdownBlock).then(() => {
+        alert(`簽署成功！已將簽核區塊複製至剪貼簿：\n\n${markdownBlock}\n\n可直接貼在對話中回覆 Antigravity。`);
+      });
+    };
+
+    // 匯出 proof_pack.json
+    document.getElementById('btn-export-proof').onclick = () => {
+      const blob = new Blob([JSON.stringify(window.SIGN_DATA, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `VERIFICATION_${window.SIGN_DATA.system}.json`;
+      a.click();
+    };
+
+    renderSignoff(window.SIGN_DATA);
+  </script>
+</body>
+</html>

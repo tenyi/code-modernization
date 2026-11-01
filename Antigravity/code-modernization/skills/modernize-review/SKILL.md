@@ -22,9 +22,20 @@ Read `BUSINESS_RULES.md` (each card has `### RULE-NNN`, Priority, Confidence, an
 
 Say how many rules will be asked (about a minute per ten). If none is left, say so and give the next step.
 
-## 2 — Ask
+## 2 — Interactive Review Deck & Questions
 
-Use the `ask_question` tool, never chat text, up to four rules per call (a questionnaire takes at most four questions). One question per rule: its id as the header; the title, the plain-English statement, its Given/When/Then in one line, the cited lines (`file:line`) and the suspected defect or SME question if it has one as the question; and three options: **Right** (the rule is correct and wanted), **Wrong, or not wanted** (it misdescribes the code, or the code does this today but should not), **Not sure** (needs a discussion). The person can type a note instead of choosing: what is right, or the question that needs answering. Keep it, in their words. Stop when they say to. Verdicts the person already typed in the request (`RULE-004 wrong: it truncates on purpose`) are recorded as given, with no pop-up for those rules. Without the tool and without typed verdicts (a headless run) do not guess: leave every rule unreviewed and say so.
+First, generate and surface the Generative UI Review Deck:
+
+```bash
+python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_widgets.py" review --system "$system" --scope "${scope:-flagged}"
+```
+
+Output the embed tag in your response:
+`<agent-embed src="analysis/$system/widgets/review_deck.html"></agent-embed>`
+
+The review deck allows the user to browse Given/When/Then cards, inspect source citations and suspected defects, and mark verdicts with hotkeys (1: confirm, 2: wrong, 3: discuss) or export decisions directly.
+
+In addition, use the `ask_question` tool, never plain chat text, for active batch review, up to four rules per call (a questionnaire takes at most four questions). One question per rule: its id as the header; the title, the plain-English statement, its Given/When/Then in one line, the cited lines (`file:line`) and the suspected defect or SME question if it has one as the question; and three options: **Right** (the rule is correct and wanted), **Wrong, or not wanted** (it misdescribes the code, or the code does this today but should not), **Not sure** (needs a discussion). The person can type a note instead of choosing: what is right, or the question that needs answering. Keep it, in their words. Stop when they say to. Verdicts the person already typed in the request (`RULE-004 wrong: it truncates on purpose`) are recorded as given, with no pop-up for those rules. Without the tool and without typed verdicts (a headless run) do not guess: leave every rule unreviewed and say so.
 
 ## 3 — Record
 

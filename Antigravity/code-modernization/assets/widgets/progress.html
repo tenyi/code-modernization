@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代碼現代化即時進度儀表板 (Code Modernization Live Dashboard)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: 'var(--bg)',
+            surface: 'var(--bg-card)',
+            border: 'var(--border)',
+            textMain: 'var(--text)',
+            textMuted: 'var(--text-muted)',
+            brand: 'var(--primary)',
+            brandSuccess: 'var(--success)',
+            brandWarning: 'var(--warning)',
+            brandDanger: 'var(--danger)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-card: #111827;
+      --border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --primary: #0284c7;
+        --success: #059669;
+        --warning: #d97706;
+        --danger: #dc2626;
+      }
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .glass-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .4; transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-6 transition-colors duration-200">
+  <div class="max-w-6xl mx-auto space-y-6" id="dashboard-app">
+    
+    <!-- 頂部標頭與整體進度 -->
+    <header class="glass-card rounded-2xl p-6 shadow-lg">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20" id="sys-track">
+              Rewrite
+            </span>
+            <h1 class="text-2xl font-bold tracking-tight" id="sys-title">系統現代化儀表板</h1>
+            <span class="text-xs text-textMuted px-2 py-0.5 rounded bg-surface border border-border" id="sys-estate-summary">
+              讀取中...
+            </span>
+          </div>
+          <p class="text-sm text-textMuted mt-1" id="sys-target">目標架構：現代化微服務與乾淨架構</p>
+        </div>
+
+        <div class="flex items-center gap-6">
+          <div class="text-right">
+            <div class="text-3xl font-extrabold text-brand" id="percent-done">0%</div>
+            <div class="text-xs text-textMuted">整體完成度</div>
+          </div>
+          <div class="w-32 bg-border rounded-full h-3 overflow-hidden">
+            <div class="bg-gradient-to-r from-sky-500 to-emerald-400 h-3 rounded-full transition-all duration-500" id="progress-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 0~8 階段時間軸 (Stage Timeline) -->
+      <div class="mt-8 pt-6 border-t border-border">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-textMuted mb-4">現代化里程碑階段 (Stages 0-8)</h2>
+        <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-2 text-center" id="stages-container">
+          <!-- 由 JS 動態注入 9 個階段 -->
+        </div>
+      </div>
+    </header>
+
+    <!-- 中間區域：模組拓撲狀態與商業規則審查概覽 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- 模組與代碼狀態 (占 2 欄) -->
+      <div class="glass-card rounded-2xl p-6 shadow-lg lg:col-span-2 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold flex items-center gap-2">
+              <span>模組建置與驗證狀態</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-border text-textMuted" id="modules-count">0 模組</span>
+            </h2>
+            <p class="text-xs text-textMuted">各服務模組代碼轉換、測試狀態與證明裁決</p>
+          </div>
+          <div class="flex gap-2 text-xs" id="proof-summary-chips">
+            <!-- 證明統計標籤 -->
+          </div>
+        </div>
+
+        <!-- 模組清單表格 -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs uppercase bg-surface/50 border-b border-border text-textMuted">
+              <tr>
+                <th class="py-2.5 px-3 font-semibold">模組目錄 / 服務</th>
+                <th class="py-2.5 px-3 font-semibold">轉換狀態</th>
+                <th class="py-2.5 px-3 font-semibold">單元測試</th>
+                <th class="py-2.5 px-3 font-semibold text-right">證明裁決 (Proof)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border" id="modules-tbody">
+              <tr>
+                <td colspan="4" class="py-6 text-center text-textMuted">載入模組數據中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 商業規則與品質摘要 (占 1 欄) -->
+      <div class="space-y-6">
+        <!-- 商業規則審核卡 -->
+        <div class="glass-card rounded-2xl p-6 shadow-lg space-y-4">
+          <h2 class="text-lg font-bold">商業規則審核狀態</h2>
+          <div class="space-y-3" id="rules-stats-container">
+            <div class="flex justify-between text-sm">
+              <span class="text-textMuted">總規則數 (Total Rules)</span>
+              <span class="font-bold" id="rules-total">0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-emerald-400">已確認 (Confirmed)</span>
+              <span class="font-bold text-emerald-400" id="rules-confirmed">0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-amber-400">待專家審查 (Flagged / P0)</span>
+              <span class="font-bold text-amber-400" id="rules-flagged">0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-rose-400">標示錯誤 (Wrong)</span>
+              <span class="font-bold text-rose-400" id="rules-wrong">0</span>
+            </div>
+          </div>
+          <div class="pt-2">
+            <a href="javascript:void(0)" onclick="alert('請在對話框輸入 /modernize-review 開啟卡片式審核甲板')" class="inline-flex w-full justify-center items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition">
+              🔍 開啟審查甲板 (Review Deck)
+            </a>
+          </div>
+        </div>
+
+        <!-- 推薦下一步引導 -->
+        <div class="glass-card rounded-2xl p-6 shadow-lg border-sky-500/30 bg-gradient-to-br from-sky-950/20 to-surface space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400">推薦下一步行動</h3>
+          </div>
+          <div class="text-base font-semibold" id="next-command">載入推薦指令...</div>
+          <p class="text-xs text-textMuted leading-relaxed" id="next-reason">
+            依據目前工程產物分析的最適切後續步驟。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部：子代理人艦隊調度 (Subagents Fleet Status) -->
+    <footer class="glass-card rounded-2xl p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-textMuted flex items-center gap-2">
+          <span>8 專業子代理人調度矩陣 (Subagent Fleet)</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-border text-textMuted">批次上限 8</span>
+        </h3>
+        <span class="text-xs text-textMuted" id="fleet-last-sync">即時連線</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="fleet-container">
+        <!-- 由 JS 動態注入 8 位代理人卡片 -->
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // 預設或注入資料
+    window.PROGRESS_DATA = window.PROGRESS_DATA || {
+      system: "demo-system",
+      target: "Clean TypeScript Architecture",
+      track: "rewrite",
+      percent: 0.45,
+      estate: {
+        languages: [{ name: "Java", share: 0.72 }, { name: "XML", share: 0.18 }, { name: "SQL", share: 0.10 }],
+        modulesCount: 6,
+        unitsCount: 142
+      },
+      stages: [
+        { key: "0-discovered", label: "探索", done: true },
+        { key: "1-analyzed", label: "拓撲分析", done: true },
+        { key: "2-extracted", label: "規則提煉", done: true },
+        { key: "3-briefed", label: "綱領簽署", done: true },
+        { key: "4-scaffolded", label: "骨架建立", done: false, active: true },
+        { key: "5-transformed", label: "代碼轉換", done: false },
+        { key: "6-tested", label: "測試比對", done: false },
+        { key: "7-hardened", label: "安全加固", done: false },
+        { key: "8-verified", label: "終審證明", done: false }
+      ],
+      modules: [
+        { dir: "core-domain", state: "tests-green", tests: { tests: 32, failures: 0 }, proof: "proven" },
+        { dir: "billing-service", state: "scaffolded", tests: { tests: 14, failures: 0 }, proof: "partly" },
+        { dir: "auth-gateway", state: "tests-failing", tests: { tests: 18, failures: 2 }, proof: "not" },
+        { dir: "notification-worker", state: "analyzed", tests: null, proof: "none" }
+      ],
+      rules: {
+        total: 58,
+        confirmed: 24,
+        flagged: 6,
+        wrong: 1
+      },
+      next: {
+        command: "invoke_subagent(Code Transformer)",
+        why: "綱領已批准，核心領域模型骨架已就緒，接續進行業務邏輯代碼轉換。"
+      },
+      fleet: [
+        { role: "Portfolio Assessor", idle: true, done: true },
+        { role: "Topology Mapper", idle: true, done: true },
+        { role: "Rule Extractor", idle: true, done: true },
+        { role: "Modernization Architect", idle: true, done: true },
+        { role: "Code Transformer", idle: false, active: true },
+        { role: "Test Engineer", idle: true },
+        { role: "Security Hardener", idle: true },
+        { role: "Verification Officer", idle: true }
+      ]
+    };
+
+    function renderDashboard(data) {
+      document.getElementById('sys-title').textContent = data.system + " 現代化即時儀表板";
+      document.getElementById('sys-track').textContent = data.track.toUpperCase();
+      document.getElementById('sys-target').textContent = "目標架構：" + (data.target || "現代化微服務與乾淨架構");
+      
+      const pct = Math.round((data.percent || 0) * 100);
+      document.getElementById('percent-done').textContent = pct + "%";
+      document.getElementById('progress-bar-fill').style.width = pct + "%";
+
+      if (data.estate) {
+        const langs = (data.estate.languages || []).map(l => l.name + ' ' + Math.round(l.share * 100) + '%').join(' · ');
+        document.getElementById('sys-estate-summary').textContent = (langs ? langs + ' · ' : '') + data.estate.modulesCount + ' 模組';
+      }
+
+      // 渲染 Stages
+      const stagesContainer = document.getElementById('stages-container');
+      stagesContainer.innerHTML = '';
+      (data.stages || []).forEach(stage => {
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center p-2 rounded-xl border transition-all text-xs ' + 
+          (stage.done 
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+            : stage.active 
+              ? 'bg-sky-500/10 border-sky-500/40 text-sky-400 ring-2 ring-sky-500/30 font-bold' 
+              : 'bg-surface border-border text-textMuted opacity-60');
+        col.innerHTML = `
+          <div class="w-6 h-6 rounded-full flex items-center justify-center mb-1 text-xs font-bold ${stage.done ? 'bg-emerald-500 text-slate-950' : stage.active ? 'bg-sky-400 text-slate-950 pulse-dot' : 'bg-border text-textMuted'}">
+            ${stage.done ? '✓' : stage.active ? '▸' : '·'}
+          </div>
+          <span class="truncate w-full">${stage.label}</span>
+        `;
+        stagesContainer.appendChild(col);
+      });
+
+      // 渲染模組表格
+      document.getElementById('modules-count').textContent = (data.modules || []).length + " 模組";
+      const tbody = document.getElementById('modules-tbody');
+      tbody.innerHTML = '';
+      
+      const proofChips = { proven: 0, partly: 0, not: 0 };
+
+      (data.modules || []).forEach(mod => {
+        if (mod.proof && proofChips[mod.proof] !== undefined) proofChips[mod.proof]++;
+        
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surface/30 transition';
+        
+        let stateBadge = `<span class="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300 border border-slate-700">${mod.state}</span>`;
+        if (mod.state.includes('green')) stateBadge = `<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">測試全數通過</span>`;
+        else if (mod.state.includes('failing') || mod.state.includes('red')) stateBadge = `<span class="px-2 py-0.5 rounded text-xs bg-rose-500/10 text-rose-400 border border-rose-500/30">測試未通過</span>`;
+        else if (mod.state.includes('scaffolded')) stateBadge = `<span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30">骨架就緒</span>`;
+
+        let testInfo = '<span class="text-textMuted text-xs">無單元測試</span>';
+        if (mod.tests) {
+          testInfo = mod.tests.failures > 0 
+            ? `<span class="text-rose-400 font-semibold">${mod.tests.failures} 失敗 / ${mod.tests.tests} 測試</span>`
+            : `<span class="text-emerald-400 font-semibold">${mod.tests.tests} 測試全數通過</span>`;
+        }
+
+        let proofBadge = '<span class="text-textMuted text-xs">尚未裁決</span>';
+        if (mod.proof === 'proven') proofBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">PROVEN</span>`;
+        else if (mod.proof === 'partly') proofBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">PARTLY PROVEN</span>`;
+        else if (mod.proof === 'not') proofBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">NOT PROVEN</span>`;
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-mono font-medium">${mod.dir}</td>
+          <td class="py-3 px-3">${stateBadge}</td>
+          <td class="py-3 px-3">${testInfo}</td>
+          <td class="py-3 px-3 text-right">${proofBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 證明統計 Chips
+      document.getElementById('proof-summary-chips').innerHTML = `
+        <span class="text-emerald-400 font-semibold">${proofChips.proven} 已證明</span> ·
+        <span class="text-amber-400 font-semibold">${proofChips.partly} 部分證明</span> ·
+        <span class="text-rose-400 font-semibold">${proofChips.not} 未證明</span>
+      `;
+
+      // 商業規則統計
+      if (data.rules) {
+        document.getElementById('rules-total').textContent = data.rules.total;
+        document.getElementById('rules-confirmed').textContent = data.rules.confirmed;
+        document.getElementById('rules-flagged').textContent = data.rules.flagged;
+        document.getElementById('rules-wrong').textContent = data.rules.wrong;
+      }
+
+      // 下一步
+      if (data.next) {
+        document.getElementById('next-command').textContent = data.next.command;
+        document.getElementById('next-reason').textContent = data.next.why;
+      }
+
+      // Fleet
+      const fleetContainer = document.getElementById('fleet-container');
+      fleetContainer.innerHTML = '';
+      (data.fleet || []).forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'p-2.5 rounded-xl border text-center transition ' + 
+          (f.active 
+            ? 'bg-sky-500/10 border-sky-500/40 text-sky-400 font-semibold' 
+            : f.done 
+              ? 'bg-surface border-border text-emerald-400' 
+              : 'bg-surface border-border text-textMuted opacity-60');
+        item.innerHTML = `
+          <div class="text-[10px] uppercase tracking-wider mb-1">${f.active ? '執行中' : f.done ? '就緒' : '待命'}</div>
+          <div class="text-xs truncate" title="${f.role}">${f.role}</div>
+        `;
+        fleetContainer.appendChild(item);
+      });
+    }
+
+    renderDashboard(window.PROGRESS_DATA);
+  </script>
+</body>
+</html>

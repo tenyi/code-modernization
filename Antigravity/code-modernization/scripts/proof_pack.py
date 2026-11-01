@@ -855,7 +855,7 @@ def build(system, workspace, module=None, now=None):
     try:
         ctx["trace"] = trace_rules.trace(workspace, system, ctx["ran"])
     except OSError as err:
-        ctx["trace_problem"] = "%s, so no rule can be traced (run the skill code-modernization:modernize-extract-rules %s)." % (clean(str(err), 200), system)
+        ctx["trace_problem"] = "%s, so no rule can be traced (run the skill modernize-extract-rules %s)." % (clean(str(err), 200), system)
     # a folder of only test code and the files that build it (a parity harness) is not a module: listed, not judged, not counted
     tooling = [s for s in everything if s["track"] != "uplift" and trace_rules.tooling_only(s["path"])]
     mods = [evaluate(s, ctx) for s in sorted(everything, key=lambda s: s["name"].lower()) if s not in tooling]

@@ -54,7 +54,7 @@ in a parameter list is a leak.
 ## Output format
 
 One "Rule Card" per rule (see the format in the skill
-`code-modernization:modernize-extract-rules`). Group by category. Lead with
+`modernize-extract-rules`). Group by category. Lead with
 a summary table.
 
 ## Fan-out contract

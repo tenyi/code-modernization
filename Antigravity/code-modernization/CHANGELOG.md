@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 — Antigravity port
+
+The package now targets Antigravity (the Gemini CLI skill directory). The procedure, the gates, the
+artifacts and the proof are unchanged; the runtime mapping is now Antigravity's.
+
+- The package is a Gemini CLI skill directory: `SKILL.md` at the root is the entry point for the
+  whole workflow, `skills/<name>/SKILL.md` holds the 13 steps.
+- A skill is addressed by its plain name (`modernize-preflight`), not by a plugin namespace.
+- The questionnaire is `ask_question`; delegation is `invoke_subagent` (`Role`, `TypeName`,
+  `description`, `prompt`), and the eight specialists stay in `agents/`.
+- Package files are found through `$SKILL_ROOT`, falling back to
+  `~/.gemini/skills/code-modernization`.
+- The next-step line in the report and in the proof pack names the step without a namespace, and
+  the map's template path uses the same variable.
+- The legacy tree is protected by the workspace guardrails; `chmod -R a-w legacy/` gives an
+  OS-level guarantee that does not depend on the agent. The `preflight` check reports on it and
+  never changes a setting.
+- Telemetry stays removed. This plugin sends nothing anywhere.
+
 ## 2.0.0 — MiniMax Code port
 
 The plugin now targets MiniMax Code. The procedure, the gates, the artifacts and the proof are the

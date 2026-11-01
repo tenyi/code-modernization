@@ -3,7 +3,7 @@ name: modernize-transform
 description: Rewrite one legacy module in the target stack, with tests that prove it behaves the same; use when a phase of the modernization brief calls for one cross-stack module rewrite.
 ---
 
-**Invocation.** Load with the `skill` tool, name `code-modernization:modernize-transform`.
+**Invocation.** Load with the `skill` tool, name `modernize-transform`.
 **Arguments.** `<system> [module] [target-stack]`
 Bound as: `$system`, `$module`, `$target_stack`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill
@@ -21,7 +21,7 @@ characterization tests and its own proof, and the next module is a separate invo
 **The legacy source is never edited.** This step writes only under `analysis/$system/` and
 `modernized/$system/$module/`; `legacy/$system/` is the untouched baseline.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent and wait for its result: never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did. **If `$module` or `$target_stack` is empty**, read
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `modernize $system --source <path to the code>`. Start every subagent and wait for its result: never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did. **If `$module` or `$target_stack` is empty**, read
 `analysis/$system/MODERNIZATION_BRIEF.md`: take the target stack it names, and the first module of
 the earliest phase whose `Command:` is `transform` that has no
 `modernized/$system/<module>/TRANSFORMATION_NOTES.md` yet (with no brief, the target in `INTENT.md`). Say which you picked.
@@ -29,8 +29,8 @@ the earliest phase whose `Command:` is `transform` that has no
 ## Subagents
 
 This step has no fan-out: the two subagents run one at a time, in order —
-`code-modernization:test-engineer` (Step 1) and `code-modernization:architecture-critic`
-(Step 5). Each is one `task` call with `agent_name: "code-modernization:<agent>"`, a
+`test-engineer` (Step 1) and `architecture-critic`
+(Step 5). Each is one `invoke_subagent` call with `Role: "<agent>", TypeName: "self"`, a
 `description` naming the work item, and a `prompt` that carries everything the subagent
 needs — it sees none of this conversation. Start the subagent, wait for its result, and
 never end the turn while one is running.
@@ -40,7 +40,7 @@ never end the turn while one is running.
 **Target stack (required).** The runtime, package manager and test framework must respond
 (`java -version` and `mvn -v`, `node -v` and `npm -v`, `python3 -V` and `pytest --version`). If not,
 stop and say what to install: a plan gate now would only defer the failure an hour. Point to
-`code-modernization:modernize-preflight $system $target_stack`.
+`modernize-preflight $system $target_stack`.
 
 **Legacy stack (advisory, never a blocker).** Try a syntax-only compile of the module. Legacy code
 often cannot build locally by nature (CICS and IMS programs have no local translator; the real runtime
@@ -148,7 +148,7 @@ range, and mask any credential-like literal in the notes: they live in `moderniz
 that file exists; the next step's module selection skips every module that has one, and a
 module without one is still open work.
 
-This is your own evidence: `code-modernization:modernize-verify $system $module` is the independent re-check
+This is your own evidence: `modernize-verify $system $module` is the independent re-check
 (it re-runs the tests and the comparison, tries new inputs, and gives one verdict).
 
 ## Step 5 — Architecture review
@@ -174,5 +174,5 @@ value.
 Apply HIGH-severity feedback and list the rest in the notes.
 
 Report: tests passing, cases executed, lines of legacy retired, where the artifacts are. Refresh the
-report (`python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). The next step is the brief's next module, or `code-modernization:modernize-harden $system`
+report (`python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). The next step is the brief's next module, or `modernize-harden $system`
 when the phase is done.

@@ -3,7 +3,7 @@ name: modernize-extract-rules
 description: Mine the business rules out of the code into testable Given/When/Then rule cards with file:line citations; use when the system's rules must be extracted, independently re-checked and rendered as a specification before anything is rewritten.
 ---
 
-**Invocation.** Load with the `skill` tool, name `code-modernization:modernize-extract-rules`.
+**Invocation.** Load with the `skill` tool, name `modernize-extract-rules`.
 **Arguments.** `<system> [module-pattern]`
 Bound as: `$system`, `$module_pattern`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill
@@ -16,7 +16,7 @@ engineers about to retire. If a module pattern was given (`$module_pattern`), fo
 there; otherwise cover the whole system. Prioritize calculation, validation, eligibility
 and state-transition logic over plumbing.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Run every subagent in the foreground and wait for its result: never end your turn while one is still running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `modernize $system --source <path to the code>`. Run every subagent in the foreground and wait for its result: never end your turn while one is still running.
 
 Extraction is **sharded per module**, so each extractor reads a small slice (whole-estate
 passes miss the tail and their contexts balloon); each rule's `file:line` citation is
@@ -32,8 +32,8 @@ can anchor the behavior contract.
 > A subagent returns its findings, so the prompt should explicitly specify the JSON format to return:
 > *Return only this JSON object — no prose, no code fences.* Collect results before writing final artifacts.
 
-Two subagents do the work: `code-modernization:business-rules-extractor` (extractors and
-the P0 judges) and `code-modernization:legacy-analyst` (citation referees, the
+Two subagents do the work: `business-rules-extractor` (extractors and
+the P0 judges) and `legacy-analyst` (citation referees, the
 consolidation pass, the data-object catalog).
 
 ## 1 — Build the shard list (module mode)
@@ -96,7 +96,7 @@ batch's extractors run, then that batch's fresh rules are de-duplicated and refe
 before the next batch starts. One focused pass per shard; there is no round loop in
 module mode — the shard list *is* the scope.
 
-Give each extractor this prompt (one `task` call per shard, `Role: "business-rules-extractor", TypeName: "self"`, `description: extract:<module name>`):
+Give each extractor this prompt (one `invoke_subagent` call per shard, `Role: "business-rules-extractor", TypeName: "self"`, `description: extract:<module name>`):
 
 ```
 Mine business rules from these files of legacy/$system (module <name>[, domain <domain>][, ~<n> LOC]):
@@ -162,7 +162,7 @@ narrows every lens in the round. Round 1 starts with the highest-value modules (
 points, anything that computes or guards money/state); later rounds target areas the
 already-catalogued list does not mention — open files no prior pass cited.
 
-Give each lens extractor this prompt (one `task` call per lens per round, `description:
+Give each lens extractor this prompt (one `invoke_subagent` call per lens per round, `description:
 extract:<lens>:r<round>`):
 
 ```
@@ -264,7 +264,7 @@ rules (<t> total) from <shard names>`.
 
 ## 4 — Verify: one citation referee per fresh rule
 
-Each fresh rule (not yet seen) gets **one** `code-modernization:legacy-analyst` referee.
+Each fresh rule (not yet seen) gets **one** `legacy-analyst` referee.
 It reads only the cited location plus enough surrounding code to judge it. Give it this
 prompt (`description: verify:<file>`):
 
@@ -350,7 +350,7 @@ The same behavior found in more than one place (a C and a C++ version, a fixed-p
 variant, a wrapper that repeats a formula, two modules with one validation) is **ONE**
 rule that cites each place, not several. This runs only when there are at least **12**
 confirmed rules (fewer than that: nothing worth merging). Split the confirmed rules into
-chunks of 150 and give each chunk to one `code-modernization:legacy-analyst`
+chunks of 150 and give each chunk to one `legacy-analyst`
 (`description: consolidate:<n>`):
 
 ```
@@ -412,8 +412,8 @@ nothing disappears untraceably, and the number of folded rules is `stats.consoli
 ## 6 — P0 panel: two independent judges per surviving P0 rule
 
 Every rule still rated P0 is judged by **two independent judges** — one through the
-compliance lens, one through the fidelity lens (`code-modernization:business-rules-extractor`,
-one `task` call each). Two judges per P0 rule; give each judge this prompt
+compliance lens, one through the fidelity lens (`business-rules-extractor`,
+one `invoke_subagent` call each). Two judges per P0 rule; give each judge this prompt
 (`description: p0:<rule name>`):
 
 ```
@@ -494,7 +494,7 @@ and counted for the person.
 
 ## 7 — Data objects
 
-One `code-modernization:legacy-analyst` catalogs the core data transfer objects /
+One `legacy-analyst` catalogs the core data transfer objects /
 records / entities (`description: dto-catalog`):
 
 ```
@@ -646,10 +646,10 @@ than one file (`stats.consolidated`). Say how many candidates no referee could j
 
 Refresh the report: `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system` (a
 convenience: if it fails or `python3` is missing, say so in one line and carry on). The
-next step is the skill `code-modernization:modernize-review` — load it with the `skill`
+next step is the skill `modernize-review` — load it with the `skill`
 tool — when rules are flagged for a person (P0 rules with a suspected defect, an SME
 question or less than High confidence: give the count), then
-`code-modernization:modernize-brief $system <target-stack>`; with none flagged, go
+`modernize-brief $system <target-stack>`; with none flagged, go
 straight to the brief.
 
 ## Safety

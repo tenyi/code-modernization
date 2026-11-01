@@ -3,7 +3,7 @@ name: modernize-status
 description: Where am I? Progress, what is stale, and the exact next step to run — start here when unsure
 ---
 
-**Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-status`.
+**Invocation.** Load this skill with the `skill` tool, name `modernize-status`.
 **Arguments.** `<system>`
 Bound as: `$system`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -11,7 +11,7 @@ Bound as: `$system`.
 Report where the modernization of `$system` stands, in one screen. This step inspects and never modifies,
 except that it refreshes `analysis/$system/REPORT.html` (`python3
 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). If nothing
-exists yet, the answer is `code-modernization:modernize $system --source <path to the code>`, which asks what the person wants and starts preflight.
+exists yet, the answer is `modernize $system --source <path to the code>`, which asks what the person wants and starts preflight.
 
 Every step of this product writes only to `analysis/$system/` and `modernized/`, and never edits the legacy
 source under `legacy/$system/`.
@@ -23,7 +23,7 @@ presence and modification time:
 
 | Stage | Artifacts |
 |---|---|
-| intent | `INTENT.md` (what the person wants; written by `code-modernization:modernize`) |
+| intent | `INTENT.md` (what the person wants; written by `modernize`) |
 | preflight | `PREFLIGHT.md` (are the Check 0 human answers and the Check 6 scope-boundary finding there?), where `legacy/$system` points (does that directory exist?) |
 | assess | `ASSESSMENT.md`, `ARCHITECTURE.mmd` |
 | map | `topology.json`, `TOPOLOGY.html`, `*.mmd`, `extract_topology.*` |
@@ -35,7 +35,7 @@ presence and modification time:
 | transform | each `modernized/$system/<module>/`: tests present? `TRANSFORMATION_NOTES.md` present (its completion marker)? |
 | reimagine | `modernized/$system-reimagined/`: per-service acceptance tests, and the `AGENTS.md` handoff (its completion marker; it does not write `TRANSFORMATION_NOTES.md`) |
 | equivalence | `EQUIVALENCE.json`: cases executed, same, differs (any differing or missing case, or zero executed, is a failure) |
-| verify | `VERIFICATION.md` (written by `code-modernization:modernize-verify`): the verdict per built module (PROVEN, PARTLY PROVEN or NOT PROVEN) and whether a person has signed it. A built module with no `VERIFICATION.md`, or one older than the module's code or tests, is **not proven yet** |
+| verify | `VERIFICATION.md` (written by `modernize-verify`): the verdict per built module (PROVEN, PARTLY PROVEN or NOT PROVEN) and whether a person has signed it. A built module with no `VERIFICATION.md`, or one older than the module's code or tests, is **not proven yet** |
 
 ## 2 — Stale
 

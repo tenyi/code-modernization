@@ -3,7 +3,7 @@ name: modernize-harden
 description: Security scan of the legacy system with a reviewable remediation patch (OWASP, CWE, CVEs, secrets, injection); use when the legacy code needs a vulnerability scan and a fix the person applies themselves.
 ---
 
-**Invocation.** Load with the `skill` tool, name `code-modernization:modernize-harden`.
+**Invocation.** Load with the `skill` tool, name `modernize-harden`.
 **Arguments.** `<system> [--show-secrets]`
 Bound as: `$system`, `$show_secrets`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill
@@ -13,7 +13,7 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 Run a **security hardening pass** on the legacy system: find vulnerabilities, rank them, and produce a
 reviewable patch for the critical ones. `$system` is the first argument; flags go after it
 (`<system> --show-secrets`), since a flag in first place would be read as the system name.
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running.
 
 This step never edits `legacy/$system`: it writes findings and a proposed patch to `analysis/$system/`, and the
 user reviews and applies (or not). It changes no file of the legacy system by itself.
@@ -44,7 +44,7 @@ commentary.
 > A subagent returns its findings, so the prompt should explicitly specify the JSON format to return:
 > *Return only this JSON object — no prose, no code fences.* Collect results before writing final artifacts.
 
-Every subagent in this step is `code-modernization:security-auditor`, and every one of them is
+Every subagent in this step is `security-auditor`, and every one of them is
 read-only. Every prompt below ends with this block, copied verbatim:
 
 ```
@@ -227,7 +227,7 @@ The scan agents are read-only: **you** write every artifact below from the resul
 
 ### Fallback: a single direct auditor
 
-When five parallel finders are not worth it, spawn one **code-modernization:security-auditor**: "Adversarially audit legacy/$system for security
+When five parallel finders are not worth it, spawn one **security-auditor**: "Adversarially audit legacy/$system for security
 vulnerabilities relevant to the stack: injection (SQL, NoSQL, OS command, template), broken auth, sensitive
 data exposure, access-control gaps, insecure deserialization, hardcoded secrets, vulnerable dependency
 versions, missing input validation, path traversal. Per finding: CWE ID, severity (Critical, High, Med, Low),
@@ -271,7 +271,7 @@ patch carries the hunk.
 
 ## Verify
 
-Spawn **code-modernization:security-auditor** again to review both patches against the code: "Review
+Spawn **security-auditor** again to review both patches against the code: "Review
 `analysis/$system/security_remediation.patch` and `.local.patch` against legacy/$system. For each hunk: does it fully
 remediate the cited finding? Does it introduce a vulnerability or change behavior beyond the fix? Confirm no raw
 credential appears anywhere in the shareable patch. One verdict per hunk: RESOLVES, PARTIAL or INTRODUCES-RISK,
@@ -290,7 +290,7 @@ Refresh the report (`python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernizat
   `patch -p1 -d legacy/$system < analysis/$system/security_remediation.patch`.
 - `analysis/$system/security_remediation.local.patch`: the credential fixes, applied the same way; rotate the
   affected credentials regardless.
-- Rerun `code-modernization:modernize-harden $system` after applying, to confirm resolution.
+- Rerun `modernize-harden $system` after applying, to confirm resolution.
 
 The patch is applied by the person, from the workspace root, and this step changes no file of the legacy
 system by itself.

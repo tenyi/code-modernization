@@ -3,7 +3,7 @@ name: modernize-review
 description: Confirm or correct the business rules that need a person's judgement; the plan and the build read your answers
 ---
 
-**Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-review`.
+**Invocation.** Load this skill with the `skill` tool, name `modernize-review`.
 **Arguments.** `<system> [flagged|p0|all]`
 Bound as: `$system`, `$scope`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -39,4 +39,4 @@ Merge the answers into `analysis/$system/RULE_REVIEWS.json`:
 
 ## 4 — What happens next
 
-Tell the person, in three lines: rules marked wrong or needing discussion are not settled; `brief` lists them as open questions and never builds a Behavior Contract on them; `transform` and `reimagine` will not pin a wrong rule as the oracle and stop on a P0 rule still under discussion. Then the next step: `code-modernization:modernize-brief $system` (run it again if the brief exists and any rule changed), or the brief's next build step when the plan is already approved.
+Tell the person, in three lines: rules marked wrong or needing discussion are not settled; `brief` lists them as open questions and never builds a Behavior Contract on them; `transform` and `reimagine` will not pin a wrong rule as the oracle and stop on a P0 rule still under discussion. Then the next step: `modernize-brief $system` (run it again if the brief exists and any rule changed), or the brief's next build step when the plan is already approved.

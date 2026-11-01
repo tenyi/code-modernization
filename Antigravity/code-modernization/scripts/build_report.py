@@ -533,7 +533,7 @@ def next_step(system, done, glance):
     """The one command to run next, from which artifacts exist. The status command decides it the same way and also
     reads the brief's phases; this page only knows what is on disk."""
     def go(command, why):
-        return {"command": "code-modernization:%s %s" % (command, system), "why": why}
+        return {"command": "%s %s" % (command, system), "why": why}
     if not done["preflight"]:
         return go("modernize-preflight", "checks the environment and records where the code lives")
     if not done["assess"]:

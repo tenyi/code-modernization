@@ -3,7 +3,7 @@ name: modernize-map
 description: Show me the structure — dependencies, data flow, entry points and business flows, as an interactive map — use when you need to know how the pieces of a legacy system connect before touching anything.
 ---
 
-**Invocation.** Load with the `skill` tool, name `code-modernization:modernize-map`.
+**Invocation.** Load with the `skill` tool, name `modernize-map`.
 **Arguments.** `<system> [--graph <file>] [--no-describe]`
 Bound as: `$system`, `$args` — `$system` is the system name, `$args` is the whole argument text as it arrived in the user's message.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -12,7 +12,7 @@ Build a **dependency and topology map** of the system and render it as an
 interactive page. The assessment found the domains; this goes one level down:
 how do the *pieces* connect? It is the map an engineer needs before touching anything.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `code-modernization:modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
 
 **Nothing edits the legacy source.** `legacy/` is read-only; everything you write goes to `analysis/$system/` — the extraction script, `topology.json`, the Mermaid files and the rendered `TOPOLOGY.html`.
 
@@ -170,7 +170,7 @@ edge-kind toggles, and a walkthrough that plays each persona flow. Build it from
 template this plugin ships; do not hand-write a viewer:
 
 ```bash
-python3 - "${PLUGIN_ROOT}/assets/topology-viewer.html" analysis/$system <<'EOF'
+python3 - "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/assets/topology-viewer.html" analysis/$system <<'EOF'
 import json, sys
 tpl_path, out_dir = sys.argv[1], sys.argv[2]
 tpl = open(tpl_path).read()
@@ -188,7 +188,7 @@ EOF
 ```
 
 The viewer is self-contained (the d3 subset it needs is inlined), so it works offline.
-If the template is not found, `${PLUGIN_ROOT}` was not substituted: report
+If the template is not found, `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}` was not substituted: report
 that rather than hand-writing a viewer.
 
 Also write small, exportable Mermaid files (each under ~40 edges; collapse to domain
@@ -204,4 +204,4 @@ Refresh the report: `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernizat
 (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Tell the user to open
 `analysis/$system/TOPOLOGY.html` and try: search a module, click it for its
 connections and description, pick a persona flow. The next step is the skill
-`code-modernization:modernize-extract-rules $system` — load it with the `skill` tool.
+`modernize-extract-rules $system` — load it with the `skill` tool.

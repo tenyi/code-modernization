@@ -47,6 +47,10 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
   共用的 skill／agent／script 檔案沿用 MiniMax Code 版的內容，入口與工具名改成該 runtime 的慣例
 - 同一套 13 個流程 Skill，但入口是根目錄的 `SKILL.md`（繁體中文說明），符合 Gemini CLI 的技能目錄慣例
 - agent 檔案同樣存在，但工具名與載入方式由 Antigravity 決定
+- runtime 對應已收斂乾淨：技能用**裸名**（`modernize-preflight`，無 plugin namespace）、
+  問卷是 `ask_question`、委派是 `invoke_subagent`（`Role`/`TypeName`）、
+  套件路徑走 `$SKILL_ROOT`（fallback `~/.gemini/skills/code-modernization`）、
+  legacy 保護靠 workspace guardrails ＋ `chmod -R a-w legacy/`（無 mcode 的 permission.json／模式）
 - 有自己的 git 歷史（來源目錄內含 `.git`）
 
 **pi 版**（`Pi/`）

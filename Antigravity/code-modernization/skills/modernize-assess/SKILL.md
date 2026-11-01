@@ -3,7 +3,7 @@ name: modernize-assess
 description: What am I dealing with? Inventory, complexity, debt, security and a recommended modernization pattern — use when assessing a legacy system before modernizing it, or when ranking a portfolio of systems on one page.
 ---
 
-**Invocation.** Load with the `skill` tool, name `code-modernization:modernize-assess`.
+**Invocation.** Load with the `skill` tool, name `modernize-assess`.
 **Arguments.** `<system> [--show-secrets] | --portfolio <parent-dir>`
 Bound as: `$system`, `$args` — `$system` is the system name, `$args` is the whole argument text as it arrived in the user's message.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -13,7 +13,7 @@ directory that follows. Otherwise run **Single-system mode** on `$system`, the
 first token. Flags go after it (`<system> --show-secrets`): a flag in first place
 would be read as the system name.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `code-modernization:modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
 
 **Nothing edits the legacy source.** `legacy/` is read-only; everything you write goes to `analysis/` — `analysis/$system/` in single-system mode, `analysis/portfolio.html` in portfolio mode.
 
@@ -35,7 +35,7 @@ every result before writing any artifact.
 
 List the subdirectories first (`ls -d <parent-dir>/*/ | xargs -n1 basename`), tell the
 user the count (30 systems means 30 agents), then run one survey agent per system: one
-`task` call each, `Role: "legacy-analyst", TypeName: "self"`, `description` naming
+`invoke_subagent` call each, `Role: "legacy-analyst", TypeName: "self"`, `description` naming
 the system being surveyed, and the prompt below.
 
 Validate the inputs before you sweep, exactly as the upstream survey did: refuse a
@@ -164,7 +164,7 @@ and rough coverage signal.
 ## Step 3 — Deep analysis (three subagents, in parallel)
 
 Start all three in one response (omit `run_in_background`) so they run in parallel, as
-in the portfolio sweep above. Each is one `task` call with
+in the portfolio sweep above. Each is one `invoke_subagent` call with
 `Role: "legacy-analyst", TypeName: "self"` or
 `Role: "security-auditor", TypeName: "self"`, and each prompt ends with the
 read-only, untrusted-content block quoted in the portfolio prompt above
@@ -243,5 +243,5 @@ legacy-analyst.
 Refresh the report: `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`
 (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Tell the user the assessment is ready
 (`analysis/$system/ASSESSMENT.md`, and the report at `analysis/$system/REPORT.html`) and
-that the next step is the skill `code-modernization:modernize-map $system` — load it
+that the next step is the skill `modernize-map $system` — load it
 with the `skill` tool.

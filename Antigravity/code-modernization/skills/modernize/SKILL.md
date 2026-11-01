@@ -3,7 +3,7 @@ name: modernize
 description: Start here — say what you want done with your code and get the plan and the first step
 ---
 
-**Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize`.
+**Invocation.** Load this skill with the `skill` tool, name `modernize`.
 **Arguments.** `[system] [--source <path>]`
 Bound as: `$system`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -19,7 +19,7 @@ source under `legacy/$system/`.
 - If `$system` was given, use it. Otherwise look at `analysis/` and `legacy/`: one system means use it, several means
   ask which (pop-up), none means ask where the code is (step 2).
 - If `analysis/$system/` already has files, this is a return visit: do what the skill
-  `code-modernization:modernize-status $system` does (where they are, what is stale) in five lines, and end on the
+  `modernize-status $system` does (where they are, what is stale) in five lines, and end on the
   exact next step. Stop there.
 
 ## 2 — Find the code
@@ -67,6 +67,6 @@ first and let the assessment's recommended pattern pick the road. Name the place
 ## 6 — First step
 
 Give the exact step with everything filled in, for example
-`code-modernization:modernize-preflight billing "Java 17" --source /work/billing`, and ask "Shall I start it?". On yes, or in a
-headless run, load the skill `code-modernization:modernize-preflight` with the `skill` tool and carry it out with those
+`modernize-preflight billing "Java 17" --source /work/billing`, and ask "Shall I start it?". On yes, or in a
+headless run, load the skill `modernize-preflight` with the `skill` tool and carry it out with those
 arguments as if they had typed it. After it finishes, name the next step.

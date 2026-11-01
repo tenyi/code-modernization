@@ -3,7 +3,7 @@ name: modernize-preflight
 description: Run this first — checks the environment, records where the code lives, and says what to fix before anything else runs
 ---
 
-**Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-preflight`.
+**Invocation.** Load this skill with the `skill` tool, name `modernize-preflight`.
 **Arguments.** `<system> [target-stack] [--source <path>]`
 Bound as: `$system`, `$target_stack`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -209,4 +209,4 @@ step:
   not migrate a shared node in place without one.
 
 Print the table in the session too. End with the single most important fix if
-anything is red, and the next step: `code-modernization:modernize-assess $system`.
+anything is red, and the next step: `modernize-assess $system`.

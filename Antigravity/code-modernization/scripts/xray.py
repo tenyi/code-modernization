@@ -336,7 +336,6 @@ def main():
         (workspace_paths[0] if isinstance(workspace_paths, list) and workspace_paths else None)
         or payload.get("cwd")
         or os.environ.get("WORKSPACE")
-        or os.environ.get("MINIMAX_PROJECT_DIR")
         or os.getcwd()
     )
     if not isinstance(workspace, str) or not workspace:

@@ -3,7 +3,7 @@ name: modernize-brief
 description: Write the phased Modernization Brief — the plan a steering committee approves and the build steps execute against
 ---
 
-**Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-brief`.
+**Invocation.** Load this skill with the `skill` tool, name `modernize-brief`.
 **Arguments.** `<system> [target-stack]`
 Bound as: `$system`, `$target_stack`.
 **Argument source.** The arguments arrive in the user's message (the text after the skill name, or a sentence naming the system). When one is missing: ask once with `ask_question`, or infer it from `analysis/` and state the assumption in one line. Never guess silently.
@@ -22,11 +22,11 @@ says so): an uplift keeps the code, so its Behavior Contract is the recorded bas
 can wait. If a required file is missing, say so and stop: they come from `assess`, `map` and
 `extract-rules`, which run first. Four more inputs are conditional:
 
-- **`RULE_REVIEWS.json` / `RULE_REVIEWS.md`**, if they exist (written by `code-modernization:modernize-review`):
+- **`RULE_REVIEWS.json` / `RULE_REVIEWS.md`**, if they exist (written by `modernize-review`):
   a person's verdicts on individual rules. Never put a rule marked `wrong` or `discuss` in the Behavior
   Contract as settled behavior: list each in section 7 as an open question with the reviewer's note, and
   block the phase that covers its module on it. A `confirmed` rule counts as confirmed by a person.
-- **`INTENT.md`**, if it exists (written by `code-modernization:modernize`): what the person wants (goal, target,
+- **`INTENT.md`**, if it exists (written by `modernize`): what the person wants (goal, target,
   what must stay true). It is the objective of this plan; never override it with a guess. Its goal decides each
   phase's build step: a newer version of the same technology means `uplift`, a rewrite in another technology
   means `transform`, a rebuild on a new architecture means `reimagine`. Without it, the assessment's pattern decides.
@@ -39,8 +39,8 @@ can wait. If a required file is missing, say so and stop: they come from `assess
 - **`DELTA_CATALOG.md`**, **required** when the target is a newer version of the *same* stack.
   An uplift's phase order is decided by its version deltas, above all by whether the existing
   tests can even run on the target runtime; phasing without the catalog is planning blind. If it
-  is missing, produce it first (`code-modernization:modernize-uplift $system <source> $target_stack`
-  through its delta-catalog step, or the **code-modernization:version-delta-analyst** agent) and **wait for its result**:
+  is missing, produce it first (`modernize-uplift $system <source> $target_stack`
+  through its delta-catalog step, or the **version-delta-analyst** agent) and **wait for its result**:
   never end your turn while an agent is still running, and never write the brief before the catalog
   exists. Do not guess at deltas.
 
@@ -76,7 +76,7 @@ Write every phase in this exact shape, because the build steps read it:
 
 ```
 #### Phase N — <name>
-Command: code-modernization:modernize-transform | -uplift | -reimagine      (exactly one)
+Command: modernize-transform | -uplift | -reimagine      (exactly one)
 Modules: <module ids exactly as in topology.json, comma separated>
 Scale: S | M | L | XL
 Risk: <level>; <top 2 risks and mitigations>

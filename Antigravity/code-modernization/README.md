@@ -1,28 +1,42 @@
-# Code Modernization (MiniMax Code)
+# Code Modernization (Antigravity)
 
 Point the agent at a legacy codebase and get four things: an understanding of what it is and what it
 does, a plan you approve, the modernized code, and **proof that the new code behaves like the old**.
 It works with any language and any kind of move: a newer version of the same technology, a rewrite in
 another one, or a rebuild on a new architecture.
 
-This is the MiniMax Code port of the upstream
-[Claude Code plugin](https://github.com/anthropics/claude-plugins-official). See
-*What changed in the port* at the end.
+This is the Antigravity port of the upstream
+[Claude Code plugin](https://github.com/anthropics/claude-plugins-official), derived from the
+MiniMax Code port. See *What changed in the port* at the end.
 
 ## Install
 
-The package lives in `~/.minimax/plugins/code-modernization/`. MiniMax Code rescans local plugins
-automatically; the plugin shows up under *Local Plugins* and is enabled by default.
+The package lives in `~/.gemini/skills/code-modernization/`, the Gemini CLI skill directory.
+Antigravity discovers it on the next session:
+
+| Path | What it is |
+| --- | --- |
+| `SKILL.md` | the entry point: the whole workflow in one skill, with links to the steps below |
+| `skills/<name>/SKILL.md` | the 13 steps, one per skill |
+| `agents/<name>.md` | the 8 specialists the steps delegate to |
+| `scripts/`, `assets/` | the report, the proof, the rule renderer and the templates |
 
 Requirements: `python3` on `PATH` (the report, the proof and the rule renderer are Python). Without
 it the skills still run, but the artifacts they generate are not produced — the agent says so in one
 line instead of failing.
 
+The scripts and templates are found through `$SKILL_ROOT`; when the runtime does not set it, the
+skills fall back to `~/.gemini/skills/code-modernization`:
+
+```
+python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" <system>
+```
+
 ## Start here
 
 Open a folder for the work and ask the agent to start the modernization, e.g.
 
-> Use code-modernization:modernize to work out what this legacy system does and what to do with it.
+> 使用 code-modernization 協助分析並現代化此遺留系統。
 
 It asks what you want to do with your code (a couple of short pop-ups), finds the code, writes your
 answers down once, shows the road ahead, and gives you the exact next step. Every later step reads
@@ -32,8 +46,8 @@ you get the assessment, the map, the business rules and a plan, and no code is r
 To go step by step instead, name the system and follow the "next step" line each skill ends with:
 
 ```
-code-modernization:modernize-preflight billing --source /work/billing
-code-modernization:modernize-status billing      # where am I, and what is next
+modernize-preflight billing --source /work/billing
+modernize-status billing      # where am I, and what is next
 ```
 
 `<name>` is a short label of your choice (letters, digits, `-`, `_`). `--source` makes a link at
@@ -139,47 +153,47 @@ systems, never a schedule or a cost.
 
 ## Set it up so it runs smoothly
 
-The steps never edit your code, by convention. MiniMax Code asks for approval before it writes, so run
-the session in `ask` or `auto` permission mode (`/permission status` shows the current mode) and keep
-the legacy source out of reach: the plugin never writes there, and a deny rule for it in
-`~/.minimax/permission.json` makes that a rule of the runtime rather than a promise. `preflight`
-checks for that rule and tells you how to add one:
+The steps never edit your code, by convention. In Antigravity that convention is backed by the
+workspace guardrails: writes stay inside `analysis/` and `modernized/`, and the legacy tree under
+`legacy/<name>/` is treated as read-only. For a guarantee that does not depend on the agent at all,
+mark the legacy source read-only on the filesystem:
 
-```json
-{
-  "allow": [{ "tool_name": "edit", "matcher": { "kind": "path", "pattern": "**/analysis/**", "actions": ["write"] } }],
-  "deny": [{ "tool_name": "edit", "matcher": { "kind": "path", "pattern": "**/legacy/**", "actions": ["write"] } }]
-}
+```sh
+chmod -R a-w legacy/
 ```
+
+`preflight` checks this (Check 7) and reports ✅ or ⚠️ — it never changes a setting for you, and it
+never fails the step. Turn it back off with `chmod -R u+w legacy/` when the work is done.
 
 `analysis/` and `modernized/` should be committed; the rest of `analysis/` may hold secrets and
 working notes, so `analysis/.gitignore` is worth keeping.
 
-## The two hooks
+## The hook scripts
 
-| Hook | What it does |
+| Script | What it does |
 | --- | --- |
-| `PostToolUse` on `read` | X-ray: when the agent reads a legacy file, what the analysis already knows about it (callers, data it touches, the rules citing it) rides along as context only the model sees. |
-| `UserPromptSubmit` and `SessionStart` | The progress line: where the modernization stands and the one next step, injected as context. |
+| `scripts/xray.py` | X-ray: when the agent reads a legacy file, what the analysis already knows about it (callers, data it touches, the rules citing it) rides along as context only the model sees. |
+| `scripts/status.py` | The progress line: where the modernization stands and the one next step. |
 
-Both are plain `python3` scripts under `scripts/`. They fail open: if `python3` is missing or an
-artifact is malformed, the turn continues untouched.
+Both are plain `python3` and they fail open: if `python3` is missing or an artifact is malformed, the
+turn continues untouched. `hooks/hooks.json` in the package root carries the hook definitions that
+call them; a runtime that does not run hooks never calls them, and no skill depends on them.
 
 ## What changed in the port
 
 The procedure, the gates, the artifacts and the proof are the upstream ones. The runtime mapping is
 not:
 
-| Upstream (Claude Code) | Here (MiniMax Code) |
+| Upstream (Claude Code) | Here (Antigravity) |
 | --- | --- |
-| 13 slash commands | 13 Skills (`code-modernization:<name>`), loaded with the `skill` tool; the arguments come from your message instead of a command line. |
-| `AskUserQuestion` pop-ups | the `ask_user` questionnaire tool. |
-| `Task` / `Agent` subagent types | the `task` tool with `agent_name: "code-modernization:<name>"`. |
-| Scripted `Workflow` fan-outs (rule mining, portfolio survey, delta catalog, uplift migration, scaffolding, security scan) | the same fan-outs, written as procedure in the skills: the agent starts the subagents with `task`, in batches, and merges their JSON results the way the workflows merged them. |
-| Live TUI progress pane, review deck and sign-off dialog | the HTML report (`analysis/<system>/REPORT.html`), the interactive map (`TOPOLOGY.html`), the `ask_user` pop-ups, and the two hooks above. |
-| Plugin settings (`userConfig`) | the workspace artifacts and the `~/.minimax/permission.json` rule; no plugin settings panel. |
+| 13 slash commands | 13 skills in `skills/<name>/SKILL.md` plus a root `SKILL.md` entry, in the Gemini CLI skill-directory convention; the arguments come from your message instead of a command line. |
+| `AskUserQuestion` pop-ups | the `ask_question` tool. |
+| `Task` / `Agent` subagent types | `invoke_subagent`, with the eight specialists in `agents/`. |
+| Scripted `Workflow` fan-outs (rule mining, portfolio survey, delta catalog, uplift migration, scaffolding, security scan) | the same fan-outs, written as procedure in the skills: the agent starts the specialists with `invoke_subagent`, in batches, and merges their JSON results the way the workflows merged them. |
+| Live TUI progress pane, review deck and sign-off dialog | the HTML report (`analysis/<system>/REPORT.html`), the interactive map (`TOPOLOGY.html`), the `ask_question` pop-ups, and the hook scripts above. |
+| Plugin settings (`userConfig`) | the workspace artifacts and Antigravity's workspace guardrails; no plugin settings panel. |
 | Usage telemetry (whole counts only, on by default) | removed. Nothing is sent anywhere, by this plugin, ever. |
-| `.claude/settings.json`, `CLAUDE.md` | `~/.minimax/permission.json`, `AGENTS.md`. |
+| `.claude/settings.json`, `CLAUDE.md` | Antigravity workspace settings, `AGENTS.md`. |
 
 Everything the upstream README promised about the *result* — the assessment, the map, the rule cards
 with citations, the approved plan, the per-module verdicts, the one-page report — is unchanged.

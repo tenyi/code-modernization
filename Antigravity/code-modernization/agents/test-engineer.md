@@ -29,7 +29,7 @@ subagents; write the tests yourself.
 - **Name the rule each test pins.** When `analysis/<system>/BUSINESS_RULES.md`
   exists, each test or golden case names the `RULE-NNN` id(s) it pins, in its
   display name, in its method name where a hyphen is not allowed
-  (`rule017_emptyInput`), or in a one-line comment. The `code-modernization:modernize-verify`
+  (`rule017_emptyInput`), or in a one-line comment. The `modernize-verify`
   step finds tests by that id: a test that names no rule counts for no rule.
 - **Cover the edges the legacy covers.** Read the legacy code's branches.
   Every IF/EVALUATE/switch arm gets at least one test case. Boundary values

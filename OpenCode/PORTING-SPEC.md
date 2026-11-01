@@ -42,11 +42,14 @@
 3. **每個主張都要有證據**。上游的「引用 `file:line`」「測試才是裁判」「只被跳過測試命名的規則不算數」全部保留。
 4. **六個決策點仍然由人決定**：preflight 的回答、看起來不對的規則、核准 brief、接受證明找到的差異、簽署證明、
    套用安全修補。絕不让代理自行決定。
-5. **不留 Claude Code / mcode 的詞彙**。以下 token 在 `skills/`、`agents/`、`plugin/` 與 README 裡必須零結果：
+5. **不留 Claude Code / mcode 的詞彙**。以下 token 在 `skills/`、`agents/`、`plugin/`、`assets/`、
+   `scripts/` 與 README 裡必須零結果：
    `PLUGIN_ROOT`、`CLAUDE_`、`AskUserQuestion`、`TodoWrite`、`subagent_type`、`MiniMax Code`、`mcode`、
    `code-modernization:`（skill/agent 的前綴引用）、`ask_user`、`` `task` tool ``、`agent_name`、
    `permission.json`、`MINIMAX`、`/permission status`、`slash command`、`Workflow tool`（作為工具名時）。
    產品標籤字串 `code-modernization`（如 status.py 的「code-modernization: 2 systems…」）允許保留。
+   產物裡指稱代理的字樣 `Claude`（上游的 agent 人稱）改寫成 `the agent`；README 裡指稱上游的
+   `Claude Code`（連結與對照表欄名）保留。
 6. **不虛構工具、檔案、腳本或設定**。腳本只有 `scripts/` 底下那 10 支；OpenCode 的工具只有 §1 表列的那些
    （另加 `question`、`skill`、`subagent`）。
 7. **不硬編碼絕對路徑**。工作區路徑相對於工作目錄；套件路徑走 `$CODE_MODERNIZATION_ROOT`（§3）。
@@ -274,7 +277,14 @@ OpenCode/code-modernization/
                                  status.py 其餘的 "code-modernization" 是產品標籤，保留；
                                  scripts 裡的 MINIMAX_PROJECT_DIR fallback 保留——plugin 永遠傳 cwd，
                                  它不會被觸發，且換掉會誤導成 workspace 之外的語意）
-  assets/*                      與母版相同（report-template、topology-viewer、mermaid）
+  assets/*                      與母版相同（report-template、topology-viewer、mermaid），
+                                **另有五處 runtime 名詞改寫**（母版沿用了上游的 mcode／Claude 用語）：
+                                  topology-viewer.html ×3：`code-modernization:modernize-map` → `@modernize-map`
+                                    （使用者可見的「重跑」指示，OpenCode 沒有 plugin namespace）
+                                  topology-viewer.html ×1 + report-template.html ×2 + proof_pack.py ×2：
+                                    產物裡指稱代理的 `Claude` → `the agent`
+                                    （proof_pack.py 與 report-template.html 是同一段文字的兩種輸出，
+                                     兩邊必須一起改）
 ```
 
 不進套件：`.minimax-plugin/`、`hooks/`、`CHANGELOG.md`（歷史屬於母版）。沒有 pi 式 manifest：
@@ -286,8 +296,9 @@ OpenCode 靠 `opencode.json(c)` 的 `skills` 與 `plugins` 陣列載入，代理
 ```sh
 cd OpenCode/code-modernization
 python3 -m py_compile scripts/*.py
-grep -rn "PLUGIN_ROOT\|CLAUDE_\|AskUserQuestion\|TodoWrite\|subagent_type\|MiniMax Code\|mcode\|code-modernization:\|ask_user\|agent_name\|permission.json\|MINIMAX_DATA\|/permission status\|slash command" skills agents plugin README.md   # 必須零結果
-grep -rn "\bbash\b" skills agents plugin README.md | grep -v "\.sh"                               # 工具語境的 bash 必須已改 shell
+grep -rn "PLUGIN_ROOT\|CLAUDE_\|AskUserQuestion\|TodoWrite\|subagent_type\|MiniMax Code\|mcode\|code-modernization:\|ask_user\|agent_name\|permission.json\|MINIMAX_DATA\|/permission status\|slash command" skills agents plugin assets scripts README.md | grep -v "scripts/status.py"   # 必須零結果（status.py 的產品標籤除外）
+grep -rn "\bbash\b" skills agents plugin assets scripts README.md | grep -v "\.sh"                                     # 工具語境的 bash 必須已改 shell
+grep -rn "\bClaude\b" skills agents plugin assets scripts README.md                                                   # 只允許 README 裡指稱上游的兩處
 ```
 
 外加：

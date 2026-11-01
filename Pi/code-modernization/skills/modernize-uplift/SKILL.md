@@ -32,7 +32,36 @@ recorded outputs on the target only. That is fine, but label it honestly (Step 0
 
 ## Fan-out
 
-> **Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+> **Method A — the `workflow` tool (preferred).** The package ships both halves of an
+> uplift as scripted fan-outs: the delta catalog, and the migration itself in
+> dependency-aware batches behind a circuit breaker.
+> 
+> ```
+> workflow({
+>   name: "modernize-uplift-deltas",
+>   args: { system: "$system", source: "$source", target: "$target" }
+> })
+> ```
+> 
+> ```
+> workflow({
+>   name: "modernize-uplift-migrate",
+>   args: {
+>     system: "$system",
+>     source: "$source",
+>     target: "$target",
+>     units: [{ name: "Billing.Core", path: "src/Billing.Core" }, { name: "Billing.Api", path: "src/Billing.Api", deps: ["Billing.Core"] }]
+>   }
+> })
+> ```
+> 
+> The migration workflow runs only AFTER the pilot unit is migrated in-session and
+> `analysis/$system/PLAYBOOK.md` exists. The tool returns the result as one JSON object —
+> render the artifacts from it, never from an agent's prose. Record the run id it returns: a
+> run that stops resumes with the same arguments plus `resumeFromRunId`.
+> 
+> **Method B — `task` calls (fallback).** When the workflow tool is not available, the
+> fan-out is done with the `task` tool.
 > One subagent is one `task` call with `agent_name: "<agent>"`, a
 > `description` naming the work item, and a `prompt` that carries everything the subagent
 > needs — it sees none of this conversation. Make several `task` calls in one response and Pi

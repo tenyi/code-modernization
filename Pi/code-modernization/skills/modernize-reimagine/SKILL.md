@@ -27,7 +27,22 @@ around it. If no phase matches, stop and ask which phase this is.
 
 ## Fan-out
 
-> **Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+> **Method A — the `workflow` tool (preferred).** The package ships the scaffolding as a
+> scripted fan-out: one agent per approved service, each writing only into its own
+> directory.
+> 
+> ```
+> workflow({
+>   name: "modernize-reimagine-scaffold",
+>   args: { system: "$system", services: [{ name: "...", responsibilities: "..." }] }
+> })
+> ```
+> 
+> Run it only after the architecture is approved. The tool returns what each service got as
+> one JSON object — render the artifacts from it, never from an agent's prose.
+> 
+> **Method B — `task` calls (fallback).** When the workflow tool is not available, the
+> fan-out is done with the `task` tool.
 > One subagent is one `task` call with `agent_name: "<agent>"`, a
 > `description` naming the work item, and a `prompt` that carries everything the subagent
 > needs — it sees none of this conversation. Make several `task` calls in one response and Pi

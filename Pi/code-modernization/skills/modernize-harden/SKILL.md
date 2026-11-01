@@ -38,7 +38,22 @@ commentary.
 
 ## Fan-out
 
-> **Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+> **Method A — the `workflow` tool (preferred).** The package ships this step's scripted
+> fan-out: the workflow scans the legacy system for security problems, and every finding is
+> judged by two reviewers before it is reported.
+> 
+> ```
+> workflow({
+>   name: "modernize-harden-scan",
+>   args: { system: "$system" }
+> })
+> ```
+> 
+> The tool returns the findings as one JSON object — render the report from it, never from
+> an agent's prose.
+> 
+> **Method B — `task` calls (fallback).** When the workflow tool is not available, the
+> fan-out is done with the `task` tool.
 > One subagent is one `task` call with `agent_name: "<agent>"`, a
 > `description` naming the work item, and a `prompt` that carries everything the subagent
 > needs — it sees none of this conversation. Make several `task` calls in one response and Pi

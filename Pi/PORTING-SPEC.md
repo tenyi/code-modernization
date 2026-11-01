@@ -18,7 +18,7 @@
 | 參數隨使用者訊息抵達 | 同上 | 技能檔用 `**Arguments.**` / `Bound as:` 描述 |
 | `ask_user` 問卷工具（1–4 題、每題 2–4 選項、可自由輸入） | pi 內建**沒有**；由本套件的 extension 提供 `ask_user` | 見 §4 |
 | `task` 工具（`agent_name`、`description`、`prompt`） | pi 內建**沒有**子代理；由本套件的 extension 提供 `task` | 見 §4 |
-| 沒有 Workflow 工具，fan-out 用多次 `task` | 同樣：pi 會平行執行同一則回應中的多個工具呼叫 | 一次回應最多 8 個子代理 |
+| 沒有 Workflow 工具，fan-out 用多次 `task` | **由本套件的 extension 提供 `workflow`**：上游的六支 `workflows/*.js` 原樣跑，runtime 換成 pi 的子代理 | 見 §4.4；技能用「Method A（workflow）／Method B（task 呼叫）」兩段 |
 | `${PLUGIN_ROOT}` | `$CODE_MODERNIZATION_ROOT`（extension 匯出的環境變數） | 沒有硬編碼路徑 |
 | `read`/`write`/`edit`/`bash`/`grep`/`glob` | `read`/`write`/`edit`/`bash`/`grep`/**`find`**/`ls` | pi 的 `find` 取代 mcode 的 `glob` |
 | `PostToolUse` on `read`（x-ray） | extension 的 `tool_result` 事件：把 x-ray 註解附加到讀取結果 | 呼叫同一支 `scripts/xray.py` |
@@ -59,11 +59,11 @@ Bound as: `$system`, `$option`.
 - `description` 是唯一的路由依據，必須讓觸發條件一眼可見。
 - `**Package files.**` 這一段每個技能都要有，否則模型不知道去哪找腳本。
 
-## 4. Extension 補上的三塊拼圖
+## 4. Extension 補上的五塊拼圖
 
-pi 沒有這三樣，所以 `extensions/code-modernization.ts` 提供：
+pi 沒有這五樣，所以 `extensions/code-modernization.ts` 與 `hooks/` 提供：
 
-### `task`
+### 4.1 `task`
 
 - 參數：`agent_name`（8 個專用代理之一）、`description`（工作項名稱）、`prompt`（完整提示）。
 - 行為：以 `pi --mode json -p --no-session --no-skills --no-context-files --append-system-prompt <agent.md> -- <prompt>`
@@ -73,14 +73,14 @@ pi 沒有這三樣，所以 `extensions/code-modernization.ts` 提供：
 - 回傳：子代理最後一則 assistant 訊息（純文字）。失敗時回傳錯誤與 stderr。
 - 平行：pi 會平行執行同一則回應中的多個 `task` 呼叫 —— 這就是 fan-out。
 
-### `ask_user`
+### 4.2 `ask_user`
 
 - 參數：`questions[]`（1–4 題），每題 `{ question, header?, options[2..4], multi? }`。
 - 互動模式：`ctx.ui.select`（附帶「Type something…」可自由輸入）；`multi: true` 時用自訂 checklist
   （上下移動、空白切換、Enter 確認、Esc 取消）。非 TUI 模式（RPC）改用文字輸入。
 - 無互動介面（headless）時：回傳錯誤訊息，技能改採預設值並記錄為待辦 —— 與母版行為一致。
 
-### Hooks
+### 4.3 Hooks
 
 - x-ray：`tool_result` 事件，`toolName === "read"` 時以 `{tool_input:{path,offset,limit}, cwd}` 呼叫
   `scripts/xray.py`，把回傳的 `additionalContext` 附加到該次讀取結果。
@@ -88,6 +88,56 @@ pi 沒有這三樣，所以 `extensions/code-modernization.ts` 提供：
   `additionalContext` 當成 custom message 注入。兩支腳本都 fail open。
 
 另外 extension 會設定 `process.env.CODE_MODERNIZATION_ROOT`，讓工作區裡的 `bash` 呼叫拿得到套件根目錄。
+
+### 4.4 `workflow`（腳本化 fan-out）
+
+上游的六支 `workflows/*.js` **原樣移植**到 `workflows/`，只換 runtime 對應：
+
+| 上游的呼叫 | pi 的對應 |
+| --- | --- |
+| `agent(prompt, { agentType, label, phase, schema })` | 以 `task` 的機制跑一個專用代理；prompt 後面補上 schema 的說明，答案解析回 JSON 物件，schema 的必填欄位缺一就當作失敗（回 `null`） |
+| `parallel(thunks)` | 最多 8 個併行，**依陣列順序啟動**（上游的續跑靠這個順序） |
+| `pipeline(items, fn)` | 同樣的併行上限，依序回傳 |
+| `log(message)` | 收集起來，連同結果一起回給模型 |
+| `budget.total` / `budget.remaining()` | pi 沒有「一輪的 token 預算」，所以 `total` 為 0（腳本裡代表「沒有預算」），上限由腳本自己的 agent cap 決定 |
+
+- 續跑：完成的代理寫進工作區的 `.code-modernization/workflow-journal.jsonl`；帶
+  `resumeFromRunId` 重跑時，已經完成的代理從 journal 重播。
+- 技能的 Fan-out 段分成兩段：**Method A（`workflow` 工具，首選）**與
+  **Method B（`task` 呼叫，後備）**，對應上游指令檔的 Method A／Method B。
+
+### 4.5 TUI 面板
+
+pi 自己是終端程式，所以上游的三個終端介面**直接畫在終端裡**，不退化成頁面：
+
+| 上游 | pi | 互動 |
+| --- | --- | --- |
+| `hooks/views/pane.tsx`（進度面板） | `/modernize-panel` | 數字鍵：`1` 把下一步放進輸入框、`2` 簽核、`3` 審核規則、`4` 停掉這一輪、`esc` 離開 |
+| `hooks/views/deck.tsx`（規則審核甲板） | `/modernize-review-pane` | `1` 確認、`2` 錯、`3` 待討論、`4` 上一張、`5` 下一張、`6` 看引用的原始碼、`7` 收回、`0` 離開並寫回 ledger |
+| `hooks/sign.ts`（簽核對話框） | `/modernize-sign` | 輸入名字、`tab` 切換涵蓋範圍、`enter` 簽核、`esc` 取消 |
+
+- 面板的資料全部由 `hooks/reader/` 讀工作區產物（上游的同一套 reader），estate map 用
+  `hooks/map/` 的 treemap 畫成終端 cell。
+- 編輯器上方有一條常駐狀態列（`ctx.ui.setWidget`）：現況與下一步，隨工作更新。
+- fleet（子代理的開關）由 extension 自己在 `task`／`workflow` 呼叫時記錄，餵給面板的 Session 區。
+
+### 4.6 面板設定
+
+pi 沒有 plugin 的 `userConfig` 面板，所以面板的選項從 pi 的設定讀，取 `codeModernization` 這一個
+key（`~/.pi/agent/settings.json` 或專案的 `.pi/settings.json`）：
+
+```json
+{
+  "codeModernization": {
+    "system": "billing",
+    "track": "auto",
+    "panel": "auto",
+    "xray": true,
+    "commandPrefix": "/skill:modernize-",
+    "legacyDir": "legacy"
+  }
+}
+```
 
 ## 5. 代理檔格式（`agents/<name>.md`）
 
@@ -113,9 +163,21 @@ python3 -m py_compile scripts/*.py                     # 腳本可編譯
 pi --skill ./skills --no-session -p "列出你可用的技能"    # 13 個技能都被發現
 ```
 
+型別檢查（`hooks/` 與 `extensions/` 是 TypeScript）需要三個套件在 `node_modules` 裡：
+
+```sh
+cd Pi/code-modernization
+npm i -D typescript @earendil-works/pi-coding-agent @earendil-works/pi-tui typebox
+npx tsc -p tsconfig.json
+```
+
 外加：
 
 - 每個 `skills/<name>/SKILL.md` 的 frontmatter `name` 與目錄同名、`description` 非空。
 - 每個 `agents/<name>.md` 的 `tools` 都是 pi 的工具名。
-- `grep -rn "PLUGIN_ROOT\|MiniMax\|mcode\|CLAUDE_\|AskUserQuestion\|Workflow tool" skills agents` 無結果。
+- `grep -rn "PLUGIN_ROOT\|MiniMax\|mcode\|CLAUDE_\|AskUserQuestion\|Workflow tool" skills agents hooks workflows` 無結果。
 - `python3 scripts/build_report.py <system>` 能產出報告，且 next step 顯示 `/skill:...`。
+- 三個面板命令可用：`/modernize-panel`、`/modernize-review-pane`、`/modernize-sign`。
+- `workflow` 工具認得六個名字：`modernize-extract-rules-mine`、`modernize-portfolio-assess`、
+  `modernize-harden-scan`、`modernize-reimagine-scaffold`、`modernize-uplift-deltas`、
+  `modernize-uplift-migrate`。

@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.0.0 — pi port, aligned with the Claude Code original
+
+The port now takes the upstream's `Claude/` tree as its source of truth for the four things pi
+lacked, and pi itself turned out to be able to do all of them natively.
+
+- **TUI panels, drawn in the terminal.** pi is a terminal program, so the upstream's three terminal
+  surfaces stay terminal surfaces instead of becoming pages:
+  - `/modernize-panel`: the progress pane — stages, the estate map, the phases, the modules, the
+    next step, what needs a person, and the session's fleet.
+  - `/modernize-review-pane`: the rule review deck, one card at a time, writing
+    `analysis/<system>/RULE_REVIEWS.json`.
+  - `/modernize-sign`: the sign-off dialog, writing the approval into the brief.
+  - a standing line above the editor, showing where the work stands and the one next step.
+  The panel's facts come from the upstream's own readers (`hooks/reader/`, `hooks/map/`), ported
+  as they are and bound to pi's file system.
+- **A scripted workflow.** The upstream's six `workflows/*.js` run as they are, with the runtime
+  they expect (`agent()`, `parallel()`, `pipeline()`, `log()`, `budget`) bound to pi's subagents:
+  one `agent()` call is one `task` run whose answer is parsed back against the schema the script
+  asked for. Finished agents are journalled, so a stopped run resumes instead of restarting.
+  The skills now offer Method A (the `workflow` tool) and Method B (`task` calls) as the upstream's
+  commands do.
+- **Task and fleet.** `task` keeps its shape; the extension now tracks every subagent it starts and
+  every tool call that subagent makes — pi's JSON mode reports them — so the panel's session block
+  shows what is running, and a failure several agents share is called out once, the way the
+  upstream does.
+- Telemetry stays removed. This package sends nothing anywhere.
+
 ## 2.1.0 — pi port
 
 The package now targets pi. The procedure, the gates, the artifacts and the proof are the upstream

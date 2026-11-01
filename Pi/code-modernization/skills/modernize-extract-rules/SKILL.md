@@ -26,7 +26,28 @@ can anchor the behavior contract.
 
 ## Fan-out
 
-> **Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+> **Method A — the `workflow` tool (preferred).** The package ships this step's scripted
+> fan-out: the workflow cuts the system into shards, runs one extractor per shard, referees
+> every citation, and confirms the P0 rules with a two-judge panel — all in one call.
+> 
+> ```
+> workflow({
+>   name: "modernize-extract-rules-mine",
+>   args: {
+>     system: "$system",
+>     modules: <contents of analysis/$system/extract-rules.modules.json>,   // omit in lens mode
+>     modulePattern: "$module_pattern"                                     // lens mode only
+>   }
+> })
+> ```
+> 
+> Optional `batchSize` (default 8, max 16): how many shards run per batch. The tool returns
+> the rule cards as one JSON object — render the artifacts from it, never from an agent's
+> prose. Record the run id it returns: a run that stops resumes with the same arguments plus
+> `resumeFromRunId`, and the agents that already finished replay from the journal.
+> 
+> **Method B — `task` calls (fallback).** When the workflow tool is not available, the
+> fan-out is done with the `task` tool.
 > One subagent is one `task` call with `agent_name: "<agent>"`, a
 > `description` naming the work item, and a `prompt` that carries everything the subagent
 > needs — it sees none of this conversation. Make several `task` calls in one response and Pi

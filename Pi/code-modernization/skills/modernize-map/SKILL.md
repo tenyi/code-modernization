@@ -136,7 +136,8 @@ Unless `$args` contains `--no-describe`, give leaf nodes a `description`: **one
 paragraph of 55 to 90 words**: what the node does in business terms, then what it
 calls, reads, writes or is called by. The viewer shows it in the sidebar.
 
-**Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+**The fan-out.** The package ships no workflow for this step: the fan-out is done with the
+`task` tool.
 One subagent is one `task` call with `agent_name: "<agent>"`, a
 `description` naming the work item, and a `prompt` that carries everything the subagent
 needs — it sees none of this conversation. Make several `task` calls in one response and Pi

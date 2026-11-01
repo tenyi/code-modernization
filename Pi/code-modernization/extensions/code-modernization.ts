@@ -3,10 +3,14 @@
  *
  * The Code Modernization package is written as skills plus specialist subagents. pi has
  * no scripted workflow runner, no subagent primitive and no questionnaire tool, so this
- * extension supplies the three pieces the procedures need:
+ * extension supplies the pieces the procedures need:
  *
  *   - `task`      — runs one specialist agent in its own pi process (isolated context).
+ *   - `workflow`  — runs the package's scripted fan-outs: the upstream's workflow
+ *                   scripts, with the runtime they expect, bound to pi's subagents.
  *   - `ask_user`  — asks the person a short questionnaire (1–4 questions, 2–4 options each).
+ *   - the pane    — the progress pane, the rule review deck and the sign-off dialog,
+ *                   drawn in the terminal, plus the standing line above the editor.
  *   - the hooks   — x-ray notes after a `read`, and the progress line with the next step.
  *
  * It also exports the package root as `$CODE_MODERNIZATION_ROOT`, so every skill can
@@ -21,9 +25,14 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type ExtensionAPI, type ExtensionContext, parseFrontmatter } from "@earendil-works/pi-coding-agent";
+import { type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+
+import { noteAgent, noteCall, noteDone, noteFailure } from "../hooks/fleet/fleet";
+import { finalText, loadAgents, runSubagent } from "../hooks/subagent";
+import { registerPanel } from "../hooks/ui";
+import { registerWorkflowTool } from "../hooks/workflow/tool";
 
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -62,248 +71,6 @@ process.env.CODE_MODERNIZATION_ROOT = PACKAGE_ROOT;
 
 /** How long a hook script may take before it is dropped (seconds). */
 const HOOK_TIMEOUT_SECONDS = 5;
-
-interface AgentSpec {
-	name: string;
-	description: string;
-	tools?: string[];
-	model?: string;
-	systemPrompt: string;
-	filePath: string;
-}
-
-function parseToolList(value: unknown): string[] | undefined {
-	const raw = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
-	const tools = raw
-		.filter((t): t is string => typeof t === "string")
-		.map((t) => t.trim())
-		.filter(Boolean);
-	return tools.length > 0 ? tools : undefined;
-}
-
-function loadAgents(): AgentSpec[] {
-	if (!fs.existsSync(AGENTS_DIR)) return [];
-	const agents: AgentSpec[] = [];
-	for (const entry of fs.readdirSync(AGENTS_DIR, { withFileTypes: true })) {
-		if (!entry.name.endsWith(".md")) continue;
-		const filePath = path.join(AGENTS_DIR, entry.name);
-		let content: string;
-		try {
-			content = fs.readFileSync(filePath, "utf-8");
-		} catch {
-			continue;
-		}
-		let frontmatter: Record<string, unknown>;
-		let body: string;
-		try {
-			({ frontmatter, body } = parseFrontmatter<Record<string, unknown>>(content));
-		} catch {
-			continue;
-		}
-		const name = typeof frontmatter.name === "string" ? frontmatter.name : entry.name.replace(/\.md$/, "");
-		const description = typeof frontmatter.description === "string" ? frontmatter.description : "";
-		agents.push({
-			name,
-			description,
-			tools: parseToolList(frontmatter.tools),
-			model: typeof frontmatter.model === "string" ? frontmatter.model : undefined,
-			systemPrompt: body,
-			filePath,
-		});
-	}
-	return agents.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/**
- * How to start pi again from inside pi: the running script when there is one, the
- * `pi` binary otherwise.
- */
-function piInvocation(args: string[]): { command: string; args: string[] } {
-	const currentScript = process.argv[1];
-	const isBunVirtualScript = currentScript?.startsWith("/$bunfs/root/");
-	if (currentScript && !isBunVirtualScript && fs.existsSync(currentScript)) {
-		return { command: process.execPath, args: [currentScript, ...args] };
-	}
-	const execName = path.basename(process.execPath).toLowerCase();
-	if (!/^(node|bun)(\.exe)?$/.test(execName)) {
-		return { command: process.execPath, args };
-	}
-	return { command: "pi", args };
-}
-
-interface SubagentResult {
-	agent: string;
-	description: string;
-	exitCode: number;
-	output: string;
-	stderr: string;
-	turns: number;
-	usage: { input: number; output: number; cacheRead: number; cacheWrite: number; cost: number };
-	model?: string;
-	stopReason?: string;
-	errorMessage?: string;
-}
-
-interface JsonEvent {
-	type?: string;
-	message?: {
-		role?: string;
-		content?: { type: string; text?: string }[];
-		usage?: {
-			input?: number;
-			output?: number;
-			cacheRead?: number;
-			cacheWrite?: number;
-			cost?: { total?: number };
-		};
-		model?: string;
-		stopReason?: string;
-		errorMessage?: string;
-	};
-}
-
-/** The last assistant text of a subagent run. */
-function finalText(result: SubagentResult): string {
-	return result.output.trim();
-}
-
-async function runSubagent(
-	agent: AgentSpec,
-	task: string,
-	description: string,
-	ctx: ExtensionContext,
-	cwd: string | undefined,
-	signal: AbortSignal | undefined,
-	onUpdate: ((text: string) => void) | undefined,
-): Promise<SubagentResult> {
-	// The child gets its own process, its own context and its own tool allowlist.
-	// Project instruction files (AGENTS.md) still reach it, like any other agent in the workspace.
-	const args: string[] = ["--mode", "json", "-p", "--no-session", "--no-skills"];
-
-	const model = agent.model ?? (ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined);
-	if (model) args.push("--model", model);
-	if (!agent.model && ctx.thinkingLevel) args.push("--thinking", ctx.thinkingLevel);
-	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
-
-	// The agent body is the system prompt of the subagent, on top of pi's own.
-	let promptFile: string | null = null;
-	let promptDir: string | null = null;
-	if (agent.systemPrompt.trim()) {
-		promptDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-cm-subagent-"));
-		promptFile = path.join(promptDir, "agent.md");
-		fs.writeFileSync(promptFile, agent.systemPrompt, { encoding: "utf-8", mode: 0o600 });
-		args.push("--append-system-prompt", promptFile);
-	}
-
-	args.push("--", task);
-
-	const result: SubagentResult = {
-		agent: agent.name,
-		description,
-		exitCode: 0,
-		output: "",
-		stderr: "",
-		turns: 0,
-		usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 },
-		model,
-	};
-
-	let aborted = false;
-
-	try {
-		result.exitCode = await new Promise<number>((resolve) => {
-			const invocation = piInvocation(args);
-			const child = spawn(invocation.command, invocation.args, {
-				cwd: cwd ?? ctx.cwd,
-				shell: false,
-				stdio: ["ignore", "pipe", "pipe"],
-				env: { ...process.env, CODE_MODERNIZATION_SUBAGENT: "1" },
-			});
-
-			let buffer = "";
-
-			const handleLine = (line: string) => {
-				if (!line.trim()) return;
-				let event: JsonEvent;
-				try {
-					event = JSON.parse(line) as JsonEvent;
-				} catch {
-					return;
-				}
-				const message = event.message;
-				if (!message) return;
-				if (event.type === "message_end" && message.role === "assistant") {
-					const text = (message.content ?? [])
-						.filter((part) => part.type === "text" && typeof part.text === "string")
-						.map((part) => part.text as string)
-						.join("");
-					if (text) result.output = text;
-					result.turns += 1;
-					const usage = message.usage;
-					if (usage) {
-						result.usage.input += usage.input ?? 0;
-						result.usage.output += usage.output ?? 0;
-						result.usage.cacheRead += usage.cacheRead ?? 0;
-						result.usage.cacheWrite += usage.cacheWrite ?? 0;
-						result.usage.cost += usage.cost?.total ?? 0;
-					}
-					if (!result.model && message.model) result.model = message.model;
-					if (message.stopReason) result.stopReason = message.stopReason;
-					if (message.errorMessage) result.errorMessage = message.errorMessage;
-					onUpdate?.(result.output);
-				}
-			};
-
-			child.stdout.on("data", (data: Buffer) => {
-				buffer += data.toString();
-				const lines = buffer.split("\n");
-				buffer = lines.pop() ?? "";
-				for (const line of lines) handleLine(line);
-			});
-			child.stderr.on("data", (data: Buffer) => {
-				result.stderr += data.toString();
-			});
-			child.on("close", (code) => {
-				if (buffer.trim()) handleLine(buffer);
-				resolve(code ?? 0);
-			});
-			child.on("error", (error: Error) => {
-				result.stderr += `${error.message}\n`;
-				resolve(1);
-			});
-
-			if (signal) {
-				const kill = () => {
-					aborted = true;
-					child.kill("SIGTERM");
-					setTimeout(() => {
-						if (!child.killed) child.kill("SIGKILL");
-					}, 5000);
-				};
-				if (signal.aborted) kill();
-				else signal.addEventListener("abort", kill, { once: true });
-			}
-		});
-
-		if (aborted) throw new Error(`Subagent "${agent.name}" was aborted`);
-		return result;
-	} finally {
-		if (promptFile) {
-			try {
-				fs.unlinkSync(promptFile);
-			} catch {
-				/* ignore */
-			}
-		}
-		if (promptDir) {
-			try {
-				fs.rmdirSync(promptDir);
-			} catch {
-				/* ignore */
-			}
-		}
-	}
-}
 
 const TaskParams = Type.Object({
 	agent_name: Type.String({
@@ -467,8 +234,20 @@ export default function codeModernization(pi: ExtensionAPI) {
 	// A subagent gets no tools and no hooks: it analyses, it does not orchestrate.
 	if (IS_SUBAGENT) return;
 
-	const agents = loadAgents();
+	const agents = loadAgents(AGENTS_DIR);
 	const agentNames = agents.map((agent) => agent.name);
+
+	// The pane: the standing state above the editor, and the three surfaces
+	// the upstream plugin draws in the terminal.
+	const panel = registerPanel(pi);
+
+	// The scripted fan-out: the package's workflow scripts, run by the runtime
+	// they expect, with pi's subagents behind it.
+	registerWorkflowTool(pi, {
+		scriptsDir: path.join(PACKAGE_ROOT, "workflows"),
+		agents,
+		panel: () => panel.panel(),
+	});
 
 	pi.registerTool({
 		name: "task",
@@ -504,6 +283,15 @@ export default function codeModernization(pi: ExtensionAPI) {
 			}
 
 			try {
+				// The fleet: the panel's session block counts the agents this
+				// session has running, and how each of them ended.
+				const fleet = panel.panel()?.state.fleet;
+				const agentId = `${agent.name}-${params.description}-${Date.now()}`;
+
+				if (fleet !== undefined) {
+					noteAgent(fleet, agentId, Date.now(), agent.name);
+				}
+
 				const result = await runSubagent(
 					agent,
 					params.prompt,
@@ -512,7 +300,24 @@ export default function codeModernization(pi: ExtensionAPI) {
 					undefined,
 					signal,
 					onUpdate ? (text) => onUpdate({ content: [{ type: "text", text }], details: { agent: agent.name } }) : undefined,
+					fleet === undefined
+						? undefined
+						: (call) => {
+								noteCall(fleet, agentId, call.tool, call.subject, Date.now(), agent.name);
+
+								if (call.error !== undefined) {
+									const shared = noteFailure(fleet, agentId, call.error, Date.now(), call.subject);
+
+									if (shared !== null) {
+										ctx.ui.notify(`Fleet: ${shared.agents.size} agents hit the same failure: ${shared.text}`, "warning");
+									}
+								}
+							},
 				);
+
+				if (fleet !== undefined) {
+					noteDone(fleet, agentId, Date.now());
+				}
 
 				const output = finalText(result);
 				const failed = result.exitCode !== 0 || result.stopReason === "error";
@@ -629,6 +434,14 @@ export default function codeModernization(pi: ExtensionAPI) {
 			cwd: ctx.cwd,
 		});
 		if (!note) return;
+		// The pane's session block counts the reads that carried the analysis.
+		const activity = panel.panel()?.state.activity;
+
+		if (activity !== undefined) {
+			activity.xrays += 1;
+			activity.xraysThisTurn += 1;
+		}
+
 		return { content: [...event.content, { type: "text", text: note }] };
 	});
 
@@ -644,6 +457,18 @@ export default function codeModernization(pi: ExtensionAPI) {
 
 	pi.on("before_agent_start", async (event, ctx) => {
 		if (event.messageType !== "user") return;
+
+		// The step this turn runs, for the pane's session block.
+		const activity = panel.panel()?.state.activity;
+
+		if (activity !== undefined) {
+			activity.xraysThisTurn = 0;
+
+			const step = /\/?(?:skill:)?(modernize-[a-z-]+)/.exec(event.prompt ?? "");
+
+			activity.step = step !== null ? `/${step[1]}` : null;
+		}
+
 		const note = await runHookScript("status.py", {
 			cwd: ctx.cwd,
 			prompt: event.prompt ?? "",

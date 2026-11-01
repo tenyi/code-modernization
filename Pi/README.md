@@ -1,16 +1,21 @@
 # pi 移植
 
 `code-modernization/` 是 **pi**（`@earendil-works/pi-coding-agent`）可用的移植版，以
-`MiniMaxCode/code-modernization/` 為母版。
+`MiniMaxCode/code-modernization/` 為母版、**以 `Claude/code-modernization/` 為事實來源**。
 
-與其他移植不同，pi 版**多了一個 extension**：pi 內建沒有子代理、沒有問卷工具、沒有 hook，
-而這套工作流三樣都要用。`extensions/code-modernization.ts` 補上：
+與其他移植不同，pi 版**多了一個 extension**：pi 內建沒有子代理、沒有問卷工具、沒有腳本化
+workflow、沒有 hook，而這套工作流都要用。`extensions/code-modernization.ts` 與 `hooks/` 補上：
 
-| pi 缺什麼 | extension 提供 | 對應母版的什麼 |
+| pi 缺什麼 | extension 提供 | 對應上游的什麼 |
 | --- | --- | --- |
-| 沒有子代理 | `task` 工具：以獨立 pi 子行程跑一個專用代理，上下文互相隔離 | mcode 的 `task` 工具 |
-| 沒有問卷 | `ask_user` 工具：1–4 題、每題 2–4 選項、可自由輸入、可複選 | mcode 的 `ask_user` 工具 |
-| 沒有 hook | x-ray（讀取舊程式碼後附加分析筆記）、狀態列（每次提問注入現況與下一步） | `hooks/hooks.json` 的兩支 hook |
+| 沒有子代理 | `task` 工具：以獨立 pi 子行程跑一個專用代理，上下文互相隔離 | `Task` 工具 |
+| 沒有腳本化 workflow | `workflow` 工具：**上游的六支 `workflows/*.js` 原樣跑**，runtime（`agent()`／`parallel()`／`pipeline()`／`log()`／`budget`）換成 pi 的子代理，答案依腳本給的 schema 解析 | `Workflow` 工具與 `workflows/*.js` |
+| 沒有問卷 | `ask_user` 工具：1–4 題、每題 2–4 選項、可自由輸入、可複選 | `AskUserQuestion` 工具 |
+| 沒有 hook | x-ray（讀取舊程式碼後附加分析筆記）、狀態列（每次提問注入現況與下一步）、fleet（子代理的開關） | `hooks/hooks.json` 的 hook 與 `hooks/fleet/` |
+| 沒有 TUI 面板 | **終端裡的真面板**：`/modernize-panel`（進度面板＋estate map）、`/modernize-review-pane`（規則審核甲板）、`/modernize-sign`（簽核對話框），另有編輯器上方的常駐狀態列 | `hooks/views/pane.tsx`、`views/deck.tsx`、`hooks/sign.ts` |
+
+pi 自己是終端程式，所以面板**不需要退化成頁面**——它直接畫在終端裡，這是 pi 版與其他移植
+最大的不同。
 
 extension 另外匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡的 `scripts/` 與 `assets/`。
 
@@ -26,7 +31,8 @@ extension 另外匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡�
 ## 安裝到 pi
 
 pi 版是一個 pi package：`Pi/code-modernization/` 裡有 `package.json`（含 `pi` manifest）、
-`skills/`、`agents/`、`extensions/`、`scripts/`、`assets/`。一次安裝，技能與工具一起生效。
+`skills/`、`agents/`、`extensions/`、`hooks/`、`workflows/`、`scripts/`、`assets/`。一次安裝，
+技能與工具一起生效。
 
 ### 需求
 
@@ -61,7 +67,9 @@ cat .pi/settings.json      # 會有 "packages": [".../Pi/code-modernization"]
 裝好後在該專案啟動 pi：
 
 - 13 個技能以 `/skill:modernize`…`/skill:modernize-verify` 的形式出現；
-- extension 同時提供 `task`（子代理）與 `ask_user`（問卷）兩個工具；
+- extension 同時提供 `task`（子代理）、`workflow`（腳本化 fan-out）與 `ask_user`（問卷）三個工具；
+- 三個面板命令可用：`/modernize-panel`（進度面板）、`/modernize-review-pane`（規則審核甲板）、
+  `/modernize-sign`（簽核對話框）；
 - **腳本不用另外設定**：extension 匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到 `scripts/` 與 `assets/`。
 
 不用的時候移除（只影響那個專案）：
@@ -121,7 +129,7 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 ```
 
 應該列出 13 個技能名。再問一次「列出你不能直接讀檔但可以呼叫的工具」，
-應該看得到 `task` 與 `ask_user`。
+應該看得到 `task`、`workflow` 與 `ask_user`。
 
 ## 同步回來源目錄
 

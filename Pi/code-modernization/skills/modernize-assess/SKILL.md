@@ -25,7 +25,23 @@ The code is `legacy/$system`, often a symlink to where it really lives: say wher
 Sweep every immediate subdirectory and produce a heat-map a steering committee
 can use to sequence a multi-year program.
 
-**Fan-out.** Pi has no scripted workflow runner: the fan-out is done with the `task` tool.
+**Method A — the `workflow` tool (preferred).** The package ships the portfolio survey as a
+scripted fan-out: one survey agent per system, all independent, and the complexity index
+computed by the workflow itself so every row is measured the same way.
+
+```
+workflow({
+  name: "modernize-portfolio-assess",
+  args: { parentDir: "<parent-dir>", systems: ["<subdir>", ...] }
+})
+```
+
+Enumerate the subdirectories first: the workflow has no file access of its own. The tool
+returns the rows as one JSON object — render the heat-map from it, never from an agent's
+prose.
+
+**Method B — `task` calls (fallback).** When the workflow tool is not available, the
+fan-out is done with the `task` tool.
 One subagent is one `task` call with `agent_name: "<agent>"`, a
 `description` naming the work item, and a `prompt` that carries everything the subagent
 needs — it sees none of this conversation. Make several `task` calls in one response and Pi

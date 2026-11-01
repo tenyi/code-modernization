@@ -156,13 +156,21 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 
 ## 移植規則
 
-`PORTING-SPEC.md` 是 MiniMax Code 與 Antigravity 兩次移植共用的轉換規格：Claude Code 的工具對應、
-skill frontmatter 契約、fan-out 措辭、禁用 token 清單。pi 版另有一份
-[`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md)：同一套母版，但要換成 pi 的技能發現、工具名、
-以及「pi 缺什麼就由 extension 補什麼」的對應表。OpenCode 版也有一份
-[`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md)：mcode → OpenCode V2 的工具對應、
-技能/代理檔格式、plugin（hooks 對應）與權限段落改寫規則。日後上游 Anthropic plugin 更新時，
-依這三份規格再轉一次即可。
+規格檔分成兩層：**根目錄 [`PORTING-SPEC.md`](PORTING-SPEC.md) 是全 runtime 共用**的規則
+（上游事實來源、不可妥協的規則、技能檔骨架、Fan-out 契約、代理規則、腳本清單、禁用 token 基線、
+檢查清單），**每個 runtime 另有自己的專屬規格**，寫該 runtime 的差異細節：
+
+| 規格檔 | 對應 runtime | 內容摘要 |
+| --- | --- | --- |
+| [`PORTING-SPEC.md`](PORTING-SPEC.md) | 全部（共用） | 上游 Claude Code 事實來源、共用規則與檢查清單 |
+| [`MiniMaxCode/PORTING-SPEC.md`](MiniMaxCode/PORTING-SPEC.md) | MiniMax Code（母版） | mcode 工具對應、`skill` 工具與 `code-modernization:` 前綴、`ask_user`、`task`、`hooks/hooks.json`、`.minimax-plugin` manifest |
+| [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Antigravity | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT` fallback、無 hooks（chmod guardrail） |
+| [`Codex/PORTING-SPEC.md`](Codex/PORTING-SPEC.md) | Codex | 單一技能 + 13 個程序檔、角色指引式代理、`CODE_MODERNIZATION_ROOT` 自行設定、循序執行、無 hooks |
+| [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md) | pi | 技能發現、extension 補三塊拼圖（`task`／`ask_user`／hooks）、`find` 取代 `glob` |
+| [`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md) | OpenCode | 技能 ID 與 `@` 字串規則、`question`／`subagent`、permissions 封閉清單、server plugin、`shell` 取代 `bash` |
+
+衝突時以專屬規格優先。日後上游 Anthropic plugin 更新時，**先重做 MiniMax 母版**，再依各專屬規格
+轉到下游 runtime。
 
 ## 同步
 

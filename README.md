@@ -4,7 +4,7 @@
 
 | 目錄 | Runtime | 誰做的 | 來源（真正被 runtime 讀取的地方） |
 | --- | --- | --- | --- |
-| `Claude/code-modernization/` | Claude Code（上游原版，非移植） | Anthropic 官方 `claude-plugins-official` | `~/.claude/plugins/code-modernization/`（鏡像自 `~/Projects/claude-plugins-official/plugins/code-modernization`） |
+| `Claude/code-modernization/` | Claude Code（上游原版，非移植） | Anthropic 官方 `claude-plugins-official` | `~/.claude/plugins/code-modernization/` |
 | `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
@@ -13,12 +13,42 @@
 
 `Claude/` 是**唯讀的上游鏡像**：所有移植的規則都從它推導出來（Claude Code 才有 `AskUserQuestion`、
 `Task`、腳本化 `Workflow`、TypeScript hooks 與 TUI 面板），但倉庫裡這份不作為執行來源。
+補回策略見 [Claude 獨有的能力，各 runtime 怎麼補](#claude-獨有的能力各-runtime-怎麼補)。
 
 Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
 author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生。
 
 > ⚠️ MiniMax 與 Antigravity 目錄是**鏡像**，不是執行來源。改完後要同步回上表的來源目錄才會生效；
 > 反過來，那邊被別的工具改動時，這裡會顯示為 diff。
+
+## Claude 獨有的能力，各 runtime 怎麼補
+
+`Claude/` 那份上游原版有幾樣東西是別家 runtime 沒有的：`AskUserQuestion`（彈出式問卷）、
+`Task`／`Agent`（子代理）、腳本化 `Workflow`（一次開一整批代理的 fan-out）、TypeScript hooks
+（`hooks/*.ts` 模組、`asyncRewake`）與 **TUI 面板**（transcript 旁邊的進度面板、規則審核甲板、
+簽核對話框、fleet 視圖）。移植時走兩條路線：
+
+- **有對應機制的 → 直接對映**：問卷用該 runtime 的問卷工具、委派用該 runtime 的子代理工具、
+  腳本化 fan-out 改成技能內的程序與批次（上限 8）、TS hooks 改成同步的 `command` handler。
+- **沒有對應機制的 → 補語義，不補外殼**：面板在別的 runtime 畫不出來，就把它承載的事實做成
+  頁面或注入的 context；TS hook 做不到，就用同語義的 Python／命令 hook 重寫。
+  **不假裝做到**：做不到的就寫清楚做不到，做得到的就說清楚是快照還是即時的。
+
+| 能力 | MiniMax Code（母版） | Antigravity | Codex | pi | OpenCode |
+| --- | --- | --- | --- | --- | --- |
+| `AskUserQuestion` | `ask_user` 問卷 | `ask_question` | 逐條問、寫進產物 | extension 補 `ask_user` | 內建 `question` |
+| `Task`／`Agent` | `task`（`code-modernization:<agent>`） | `invoke_subagent` | 角色指引式代理、循序執行 | extension 補 `task` | 內建 `subagent` |
+| 腳本化 `Workflow` | 技能內的程序＋批次 | 同左 | 循序執行 | 同左 | 同左 |
+| TypeScript hooks | 同步 `command` handler（Python） | `hooks/hooks.json`（runtime 不保證執行） | 無 | extension 補兩支 hook | server plugin（`execute.after` 等） |
+| TUI 面板 | **三個頁面**：`PANEL.html`／`REVIEW_DECK.html`／`SIGNOFF.html`；fleet 由 `SubagentStart`／`SubagentStop` hook 累積後畫進面板 | **Generative UI**：`<agent-embed>` 內嵌的進度看板、審核甲板、簽核卡 | 無 | 無 | 無 |
+| 遙測 | **無** | **無** | **無** | **無** | **無** |
+
+**遙測：任何移植都沒有。** 上游的 `scripts/telemetry.py`／`telemetry.sh` 整支不帶進來，
+任何移植都不會送出任何東西——Claude 那份鏡像裡有上游的遙測，但它只是唯讀對照，沒有被複製到
+任何一份移植。
+
+**母版規則**：`Claude/` 是唯讀的事實來源，`MiniMaxCode/` 是所有其他移植的母版。上游更新時
+**先重做 MiniMax 母版**（把上游新增的語義先補進母版，含上面那列的落差），再依各專屬規格轉出去。
 
 ## 各份移植的差異
 
@@ -37,7 +67,11 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 - 13 個 Skill，入口名 `code-modernization:<name>`，用 `skill` 工具載入
 - 8 個 Plugin subagent，委派名 `code-modernization:<agent>`，用 `task` 工具呼叫
 - 人的決策點走 `ask_user` 問卷工具
-- 2 個 hook：`PostToolUse` 上的 x-ray、`UserPromptSubmit` / `SessionStart` 上的狀態列
+- 6 個 hook handler：`PostToolUse`(read) 的 x-ray、`UserPromptSubmit`／`SessionStart` 的狀態列、
+  `SubagentStart`／`SubagentStop`／`PostToolUse`(task) 的 fleet（記住本 session 開過哪些子代理）
+- **TUI 面板的 mcode 化**：Claude 的三個 TUI 介面（進度面板、規則審核甲板、簽核對話框）改成三個
+  頁面 `analysis/<system>/PANEL.html`／`REVIEW_DECK.html`／`SIGNOFF.html`，由
+  `scripts/render_panel.py` 產生；面板裡的 fleet 區塊讀 `analysis/.fleet.json`（由 hook 累積）
 - 套件格式：`.minimax-plugin/plugin.json` + `skills/` + `agents/` + `hooks/` + `scripts/` + `assets/`
 - 遙測已完全移除
 
@@ -51,8 +85,11 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
   問卷是 `ask_question`、委派是 `invoke_subagent`（`Role`/`TypeName`）、
   套件路徑走 `$SKILL_ROOT`（fallback `~/.gemini/skills/code-modernization`）、
   legacy 保護靠 workspace guardrails ＋ `chmod -R a-w legacy/`（無 mcode 的 permission.json／模式）
-- 套件仍附 `hooks/hooks.json`（與母版同樣三個 hook，路徑改用 `$SKILL_ROOT` fallback），
+- 套件仍附 `hooks/hooks.json`（三個 hook，路徑改用 `$SKILL_ROOT` fallback），
   但 Antigravity **不保證會執行 hooks**：runtime 不跑時就不會被呼叫，且沒有任何技能依賴它們
+- **TUI 面板的 Antigravity 化**：Claude 的 TUI 介面改成 Antigravity 的 **Generative UI**——
+  `assets/widgets/` 的進度看板、規則審核甲板與簽核卡，由 `scripts/render_widgets.py` 組裝，
+  以 `<agent-embed>` 在對話中內嵌
 - 有自己的 git 歷史（來源目錄內含 `.git`）
 
 **pi 版**（`Pi/`）
@@ -206,6 +243,15 @@ Python 能編譯。pi 版另外確認 13 個技能都被 pi 發現、extension �
 cd Pi/code-modernization
 python3 -m py_compile scripts/*.py
 pi --skill ./skills --no-session -p "列出你可用的技能"
+```
+
+MiniMax Code 版另外確認面板三頁可產生並開得起來（母版新增的東西）：
+
+```sh
+cd MiniMaxCode/code-modernization
+python3 -m py_compile scripts/*.py
+python3 scripts/render_panel.py all --system <某個已存在的系統> --workspace <該專案根>
+# 產生 analysis/<system>/{PANEL,REVIEW_DECK,SIGNOFF}.html，用瀏覽器開啟，console 無錯誤
 ```
 
 OpenCode 版另外跑移植規格 §9 的檢查（py_compile、禁用 token 的全區 grep、

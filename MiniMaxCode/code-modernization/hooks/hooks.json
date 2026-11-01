@@ -1,5 +1,5 @@
 {
-  "description": "X-ray notes for a file the agent reads, and the progress line with the next step",
+  "description": "X-ray notes for a file the agent reads, the progress line with the next step, and the fleet of subagents this session has seen",
   "hooks": {
     "PostToolUse": [
       {
@@ -9,6 +9,41 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_ROOT}/scripts/xray.py\"",
             "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\xray.py\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/fleet.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\fleet.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/fleet.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\fleet.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/fleet.py\"",
+            "commandWindows": "python \"${PLUGIN_ROOT}\\scripts\\fleet.py\"",
             "timeout": 5
           }
         ]

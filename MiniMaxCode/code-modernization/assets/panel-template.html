@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="@@CSP@@">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Modernization panel</title>
+<style>
+:root{color-scheme:light;--bg:#f4f5f7;--surface:#fff;--text:#1a1f27;--muted:#4a5565;--line:#d3d8e0;--link:#0a57b8;--focus:#0a57b8;--code:#eceff4;--paper:#fff;
+--ok-bg:#dff2e5;--ok:#0f5132;--bad-bg:#fbe1e1;--bad:#861a1a;--warn-bg:#fcecc0;--warn:#654200;--info-bg:#e1ebfa;--info:#123f86;--flat-bg:#e8ebf0;--flat:#2f3a4a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0e1217;--surface:#161b22;--text:#e6e9ee;--muted:#a9b2bf;--line:#2c3541;--link:#7db4ff;--focus:#9cc4ff;--code:#1f262f;--hit:#7a5c00;--hit-text:#fff;
+--ok-bg:#12321f;--ok:#a7e8bd;--bad-bg:#3d1417;--bad:#ffc4c4;--warn-bg:#3a2d0a;--warn:#f6d58a;--info-bg:#15294a;--info:#b9d3ff;--flat-bg:#232b36;--flat:#d5dbe4}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0e1217;--surface:#161b22;--text:#e6e9ee;--muted:#a9b2bf;--line:#2c3541;--link:#7db4ff;--focus:#9cc4ff;--code:#1f262f;--hit:#7a5c00;--hit-text:#fff;
+--ok-bg:#12321f;--ok:#a7e8bd;--bad-bg:#3d1417;--bad:#ffc4c4;--warn-bg:#3a2d0a;--warn:#f6d58a;--info-bg:#15294a;--info:#b9d3ff;--flat-bg:#232b36;--flat:#d5dbe4}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:14px}
+h1{font-size:1.3rem;line-height:1.25;margin:0}#sub{margin:2px 0 0;font-size:.875rem;color:var(--muted)}
+.tools{display:flex;gap:8px;align-items:center}
+button{font:inherit;color:var(--text);border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:7px 12px;cursor:pointer}
+button[aria-pressed=true]{background:var(--info-bg);color:var(--info);border-color:var(--info)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+main{padding-top:20px;padding-bottom:64px}
+h2{font-size:1.15rem;margin:0 0 12px}
+h3{font-size:1rem;margin:22px 0 8px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0}
+.stat{background:var(--bg);border-radius:8px;padding:10px 12px}.stat dt{font-size:.8125rem;color:var(--muted)}.stat dd{margin:2px 0 0;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.chip,.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.8125rem;line-height:1.5;font-weight:600;background:var(--flat-bg);color:var(--flat)}
+.chip.ok,.badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.bad{background:var(--bad-bg);color:var(--bad)}.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.info,.badge.info{background:var(--info-bg);color:var(--info)}.chip.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:400;border-radius:6px}
+.banner{border-radius:8px;padding:10px 14px;margin:0 0 12px;font-weight:600}.banner p{margin:4px 0 0;font-weight:400}
+.ok{background:var(--ok-bg);color:var(--ok)}.bad{background:var(--bad-bg);color:var(--bad)}.warn{background:var(--warn-bg);color:var(--warn)}.info{background:var(--info-bg);color:var(--info)}.flat{background:var(--flat-bg);color:var(--flat)}
+.next{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 8px}.next .chip{font-size:.875rem;user-select:all}.next .why{color:var(--muted);font-size:.875rem}
+.copy{font:inherit;font-size:.8125rem;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:6px;padding:2px 10px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:0}
+.tile{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.tile .name{font-weight:600;font-size:.9375rem}.tile .mark{margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:.875rem}
+th,td{padding:7px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:var(--code);white-space:nowrap}tr:last-child td{border-bottom:0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.875em;background:var(--code);padding:1px 5px;border-radius:4px}
+.tw{overflow:auto;max-width:100%;margin:12px 0;border:1px solid var(--line);border-radius:8px}
+.rule{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0;background:var(--bg)}
+.rule .rid{font:600 .8125rem ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+.rule h4{margin:6px 0;font-size:1rem}.rule .body{white-space:pre-wrap;margin:8px 0;font-size:.9375rem}
+.cites{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.cites code{font-size:.8125rem}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.signoff{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
+dl.facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0;font-size:.9375rem}
+dl.facts dt{color:var(--muted)}dl.facts dd{margin:0}
+footer{margin-top:24px;font-size:.8125rem;color:var(--muted)}
+@media (max-width:700px){.bar{align-items:flex-start}.tools{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+<div><h1 id="title">Modernization panel</h1><p id="sub"></p></div>
+<div class="tools"><button id="theme" type="button">Theme</button></div>
+</div></header>
+<main class="wrap" id="app"></main>
+<script type="application/json" id="panel-data">@@DATA@@</script>
+<script id="app">
+(function () {
+'use strict';
+
+var DATA = JSON.parse(document.getElementById('panel-data').textContent);
+var KIND = DATA.kind || 'progress';
+
+function h(tag, attrs, kids) {
+  var el = document.createElement(tag);
+  if (attrs) { Object.keys(attrs).forEach(function (k) {
+    if (k === 'class') el.className = attrs[k];
+    else if (k === 'text') el.textContent = attrs[k];
+    else if (k === 'html') el.textContent = attrs[k];
+    else if (attrs[k] !== null && attrs[k] !== undefined) el.setAttribute(k, attrs[k]);
+  }); }
+  (kids || []).forEach(function (kid) { if (kid) el.appendChild(kid); });
+  return el;
+}
+function txt(tag, text, cls) { return h(tag, {class: cls || null, text: text === undefined || text === null ? '' : String(text)}); }
+function chip(text, cls) { return h('span', {class: 'chip' + (cls ? ' ' + cls : ''), text: text}); }
+function badge(text, cls) { return h('span', {class: 'badge' + (cls ? ' ' + cls : ''), text: text}); }
+function mark(verdict) {
+  var v = String(verdict || '').toUpperCase();
+  if (v === 'PROVEN') return badge('PROVEN', 'ok');
+  if (v === 'PARTLY PROVEN') return badge('PARTLY PROVEN', 'warn');
+  if (v === 'NOT PROVEN') return badge('NOT PROVEN', 'bad');
+  return badge(v || 'built', 'flat');
+}
+function ago(seconds) {
+  var s = Math.max(0, Math.round(seconds || 0));
+  if (s < 60) return s + 's';
+  var m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ' + (s % 60) + 's';
+  return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+}
+function section(title, body) {
+  var card = h('section', {class: 'card'}, [txt('h2', title)]);
+  body.forEach(function (node) { if (node) card.appendChild(node); });
+  return card;
+}
+
+/* ------------------------------------------------------------ the progress pane */
+function renderProgress() {
+  var g = DATA.glance || {};
+  var proof = g.proof || {};
+  var rules = g.rules || {};
+  var next = g.next || {};
+  var track = (g.track || {}).label || 'rewrite';
+  var fleet = DATA.fleet || {};
+
+  var stats = h('dl', {class: 'stats'}, []);
+  function stat(label, value, small) {
+    var box = h('div', {class: 'stat'}, [txt('dt', label), txt('dd', value)]);
+    if (small) box.appendChild(txt('small', small));
+    return box;
+  }
+  stats.appendChild(stat('Analysis', DATA.doneCount + '/' + DATA.stageCount + ' stages',
+    (DATA.moduleCount || 0) + ' module' + (DATA.moduleCount === 1 ? '' : 's') + ' built'));
+  stats.appendChild(stat('Proof', proof.verdict || 'not run yet',
+    proof.headline ? String(proof.headline).slice(0, 90) : 'no verification yet'));
+  stats.appendChild(stat('Rules', (rules.total || 0) + ' cards',
+    (rules.defects || 0) + ' need a person\'s eye'));
+  stats.appendChild(stat('Fleet', (fleet.running || 0) + ' running',
+    (fleet.seen || 0) + ' agents seen, ' + (fleet.failed || 0) + ' failed'));
+  stats.appendChild(stat('Track', track, 'the newest artifact decides'));
+
+  var nodes = [section('Where the work stands', [stats])];
+
+  /* the stage track */
+  var chips = h('ul', {class: 'chips'}, []);
+  (DATA.stages || []).forEach(function (step) {
+    chips.appendChild(h('li', {}, [chip((step.done ? '✓ ' : '') + step.label, step.done ? 'ok' : 'flat')]));
+  });
+  nodes.push(section('Stages', [chips]));
+
+  /* the estate: what was built, and what the proof says about it */
+  if ((DATA.modules || []).length) {
+    var tiles = h('div', {class: 'tiles'}, []);
+    DATA.modules.forEach(function (m) {
+      var tile = h('div', {class: 'tile'}, [txt('div', m.name, 'name')]);
+      var markBox = h('div', {class: 'mark'}, [mark(m.verdict)]);
+      tile.appendChild(markBox);
+      tiles.appendChild(tile);
+    });
+    nodes.push(section('Modules', [tiles]));
+  }
+
+  /* the one next step */
+  if (next.command) {
+    var line = h('div', {class: 'next'}, [chip(next.command, 'info mono')]);
+    var copy = h('button', {class: 'copy', type: 'button', text: 'Copy'});
+    copy.addEventListener('click', function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(next.command);
+      copy.textContent = 'Copied';
+      setTimeout(function () { copy.textContent = 'Copy'; }, 1200);
+    });
+    line.appendChild(copy);
+    if (next.why) line.appendChild(txt('span', next.why, 'why'));
+    nodes.push(section('Next step', [line]));
+  }
+
+  /* the fleet */
+  var fleetBody = [];
+  if ((fleet.signatures || []).length) {
+    fleet.signatures.forEach(function (sig) {
+      var box = h('div', {class: 'banner' + (sig.shared ? ' bad' : ' warn')}, [
+        txt('div', sig.count + ' agents hit the same failure'),
+        txt('p', sig.text)
+      ]);
+      fleetBody.push(box);
+    });
+  }
+  if ((fleet.agents || []).length) {
+    var rows = [];
+    fleet.agents.slice().reverse().forEach(function (a) {
+      rows.push(h('tr', {}, [
+        h('td', {}, [txt('span', a.type || a.id, 'rid')]),
+        h('td', {}, [a.state === 'running' ? badge('running', 'info') : (a.state === 'failed' ? badge('failed', 'bad') : badge('done', 'ok'))]),
+        h('td', {}, [txt('span', a.state === 'running' ? ago(a.since) : ago(a.age))]),
+        h('td', {}, [txt('span', a.last || '—', 'muted')])
+      ]));
+    });
+    var table = h('table', {}, []);
+    var thead = h('thead', {}, [h('tr', {}, [txt('th', 'Agent'), txt('th', 'State'), txt('th', 'Time'), txt('th', 'Last said')])]);
+    table.appendChild(thead);
+    table.appendChild(h('tbody', {}, rows));
+    fleetBody.push(h('div', {class: 'tw'}, [table]));
+    fleetBody.push(txt('p', 'The fleet is what this session\'s runtime reported: ' + (fleet.seen || 0) +
+      ' subagent' + (fleet.seen === 1 ? '' : 's') + ' (' + (fleet.running || 0) + ' running, ' + (fleet.failed || 0) +
+      ' failed), and ' + (fleet.calls || 0) + ' task call' + (fleet.calls === 1 ? '' : 's') + ' of which ' +
+      (fleet.failedCalls || 0) + ' failed. A shared failure is called out once ' +
+      (fleet.threshold || 3) + ' agents have hit it.', 'muted'));
+  } else {
+    fleetBody.push(txt('p', 'No subagent has run in this session yet.', 'muted'));
+  }
+  nodes.push(section('The fleet', fleetBody));
+
+  return nodes;
+}
+
+/* ------------------------------------------------------------ the review deck */
+function renderReview() {
+  var stats = DATA.deckStats || {};
+  var deck = DATA.deck || [];
+  var flagged = deck.filter(function (c) { return c.defect; });
+  var p0 = deck.filter(function (c) { return c.p === 'P0'; });
+  var scope = DATA.scope || 'flagged';
+
+  var summary = h('div', {class: 'chips'}, []);
+  summary.appendChild(chip((stats.total || 0) + ' rule cards'));
+  summary.appendChild(chip((stats.defects || 0) + ' flagged'));
+  Object.keys(stats.byPriority || {}).forEach(function (k) {
+    summary.appendChild(chip(k + ': ' + stats.byPriority[k], k === 'P0' ? 'info' : null));
+  });
+  var decided = 0;
+  Object.keys(DATA.reviews || {}).forEach(function (k) { if ((DATA.reviews[k] || {}).verdict) decided++; });
+  summary.appendChild(chip(decided + ' decided by a person'));
+
+  var list = h('div', {id: 'cards'}, []);
+  var shown = scope === 'p0' ? p0 : (scope === 'all' ? deck : flagged);
+  if (!shown.length) {
+    list.appendChild(txt('p', scope === 'flagged'
+      ? 'No rule card is flagged. A flagged card is one whose suspected defect says the code may not do what the card claims.'
+      : 'No rule card matches this scope.', 'muted'));
+  }
+  shown.forEach(function (card) {
+    var box = h('article', {class: 'rule'}, [txt('div', card.id, 'rid')]);
+    var badges = h('div', {class: 'chips'}, []);
+    if (card.p) badges.appendChild(badge(card.p, card.p === 'P0' ? 'bad' : 'warn'));
+    if (card.cat) badges.appendChild(chip(card.cat));
+    if (card.conf) badges.appendChild(chip(card.conf + ' confidence'));
+    if (card.defect) badges.appendChild(badge('flagged', 'bad'));
+    if (card.verdict) badges.appendChild(badge(card.verdict, 'ok'));
+    box.appendChild(badges);
+    if (card.title) box.appendChild(txt('h4', card.title));
+    if (card.body) box.appendChild(txt('div', card.body, 'body'));
+    if ((card.cites || []).length) {
+      var cites = h('div', {class: 'cites'}, []);
+      card.cites.forEach(function (c) { cites.appendChild(h('code', {text: c})); });
+      box.appendChild(cites);
+    }
+    list.appendChild(box);
+  });
+
+  var filters = h('div', {class: 'filters'}, []);
+  [['flagged', 'Flagged'], ['p0', 'P0 only'], ['all', 'All cards']].forEach(function (pair) {
+    var b = h('button', {type: 'button', text: pair[1]});
+    b.setAttribute('aria-pressed', scope === pair[0] ? 'true' : 'false');
+    b.addEventListener('click', function () {
+      filters.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      var next = scope === pair[0] ? DATA : Object.assign({}, DATA, {scope: pair[0]});
+      show(next);
+    });
+    filters.appendChild(b);
+  });
+
+  return [section('Business rules to review', [summary]), h('div', {class: 'card'}, [filters, list])];
+}
+
+/* ------------------------------------------------------------ the sign-off card */
+function renderSignoff() {
+  var proof = (DATA.glance || {}).proof || {};
+  var sign = DATA.signoff || {};
+  var legacy = DATA.legacy || {};
+
+  var banner = h('div', {class: 'banner ' + (proof.verdict === 'PROVEN' ? 'ok' : (proof.verdict === 'PARTLY PROVEN' ? 'warn' : 'bad'))}, [
+    txt('div', proof.verdict || 'NOT PROVEN'),
+    txt('p', proof.headline || 'No verification has been run yet.')
+  ]);
+
+  var chips = h('div', {class: 'chips'}, []);
+  var counts = proof.counts || {};
+  Object.keys(counts).forEach(function (k) { if (counts[k]) chips.appendChild(chip(k + ' × ' + counts[k], k === 'PROVEN' ? 'ok' : (k === 'PARTLY PROVEN' ? 'info' : 'bad'))); });
+
+  var nodes = [section('The proof', [banner, chips])];
+
+  if ((proof.problems || []).length) {
+    var list = h('ul', {});
+    proof.problems.forEach(function (p) { list.appendChild(h('li', {}, [txt('span', p)])); });
+    nodes.push(section('What the proof does not establish', [list]));
+  }
+
+  if ((proof.modules || []).length) {
+    var rows = [];
+    proof.modules.forEach(function (m) {
+      rows.push(h('tr', {}, [h('td', {}, [txt('span', m.name, 'rid')]), h('td', {}, [mark(m.verdict)])]));
+    });
+    var table = h('table', {}, []);
+    table.appendChild(h('thead', {}, [h('tr', {}, [txt('th', 'Module'), txt('th', 'Verdict')])]));
+    table.appendChild(h('tbody', {}, rows));
+    nodes.push(section('Module verdicts', [h('div', {class: 'tw'}, [table])]));
+  }
+
+  var facts = h('dl', {class: 'facts'}, []);
+  function fact(k, v) { if (v) { facts.appendChild(txt('dt', k)); facts.appendChild(txt('dd', v)); } }
+  fact('Legacy', legacy.path);
+  fact('Target', legacy.target);
+  fact('Old system ran here', legacy.ran === true ? 'yes' : (legacy.ran === false ? 'no' : 'unknown'));
+  fact('State', legacy.state);
+  fact('Detail', legacy.detail);
+  if (facts.childNodes.length) nodes.push(section('What was compared', [facts]));
+
+  var block = h('div', {class: 'signoff'}, []);
+  block.appendChild(txt('h3', 'Signature'));
+  var signed = sign.name || sign.decision;
+  block.appendChild(txt('p', signed
+    ? 'Signed by ' + (sign.name || '?') + (sign.role ? ' (' + sign.role + ')' : '') + (sign.date ? ' on ' + sign.date : '') + '.'
+    : 'Not signed yet. A person signs in analysis/' + DATA.system + '/VERIFICATION.md; the plugin never signs for them.'));
+  if (sign.decision) block.appendChild(txt('p', 'Decision: ' + sign.decision, 'muted'));
+  nodes.push(section('Sign-off', [block]));
+
+  return nodes;
+}
+
+/* ------------------------------------------------------------ the page */
+function show(data) {
+  DATA = data;
+  var app = document.getElementById('app');
+  app.textContent = '';
+  document.getElementById('title').textContent = 'Modernization panel — ' + data.system;
+  var g = data.glance || {};
+  var track = (g.track || {}).label || 'rewrite';
+  document.getElementById('sub').textContent =
+    (data.kind === 'progress' ? 'Progress pane' : (data.kind === 'review' ? 'Rule review deck' : 'Sign-off card')) +
+    ' · ' + track + ' · rendered ' + data.generated + ' · a snapshot of that moment';
+
+  var nodes = [];
+  if (data.kind === 'progress') nodes = renderProgress();
+  else if (data.kind === 'review') nodes = renderReview();
+  else nodes = renderSignoff();
+
+  nodes.forEach(function (node) { app.appendChild(node); });
+
+  var foot = h('footer', {}, []);
+  foot.appendChild(txt('p', 'Written to analysis/' + data.system + '/. The other panels: PANEL.html, REVIEW_DECK.html, SIGNOFF.html.', 'muted'));
+  if ((data.notes || []).length) {
+    var ul = h('ul', {});
+    data.notes.forEach(function (n) { ul.appendChild(h('li', {}, [txt('span', n)])); });
+    foot.appendChild(ul);
+  }
+  app.appendChild(foot);
+}
+
+function setTheme(mode) {
+  var root = document.documentElement;
+  if (mode === 'light' || mode === 'dark') root.setAttribute('data-theme', mode);
+  else root.removeAttribute('data-theme');
+}
+var saved = 'auto';
+try { saved = localStorage.getItem('panel-theme') || 'auto'; } catch (e) { /* ignore */ }
+setTheme(saved);
+document.getElementById('theme').addEventListener('click', function () {
+  var cur = document.documentElement.getAttribute('data-theme');
+  var next = cur === 'light' ? 'dark' : (cur === 'dark' ? 'auto' : 'light');
+  setTheme(next);
+  try { localStorage.setItem('panel-theme', next); } catch (e) { /* ignore */ }
+});
+
+show(DATA);
+})();
+</script>
+</body>
+</html>

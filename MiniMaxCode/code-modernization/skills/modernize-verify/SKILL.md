@@ -134,7 +134,11 @@ a rule is wrong, say so and leave the file as it is.
 ## Finish
 
 Refresh the report (`python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is
-missing, say so in one line and carry on), then name the next step. **PARTLY PROVEN or NOT PROVEN:** turn each reason, in order, into a
+missing, say so in one line and carry on), then render the sign-off card (`python3
+"${PLUGIN_ROOT}/scripts/render_panel.py" signoff --system $system`), which writes
+`analysis/$system/SIGNOFF.html`: the verdict banner, what the proof does not establish, the verdict per module and
+the sign-off block. Deliver the card with a `<deliver-assets>` block. A named person signs in
+`analysis/$system/VERIFICATION.md`; the card never signs for them. Then name the next step. **PARTLY PROVEN or NOT PROVEN:** turn each reason, in order, into a
 command. A failure caused by this machine: run the suite where the tool works (a terminal outside the sandbox, or CI), then run this
 command again. A difference the notes call intended: a person records it (once per input with `"approvedInputs": {"F23": "why"}` at the top of
 `fresh-cases.json`, or `approvedDifference` in one case, or the table in `BASELINE.md`); you never do. P0 rules "named, not run" or named by no test: the test that pins each one must run and pass (write or enable it, keep its result file); adding an id or dropping a skip marker without that proves nothing. Then run this again. Any other failing

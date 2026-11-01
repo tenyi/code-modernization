@@ -62,3 +62,18 @@ End with three lines:
   The order is preflight, assess, map, extract-rules, review (when rules are flagged for a person), brief (needs approval), then the brief's Phase 1 step
   (`transform`, `uplift` or `reimagine`), then `verify` for what was built, then `harden`. Never call a
   built module done until `verify` says PROVEN and a person has signed it: put `verify` ahead of building the next module.
+
+## 5 — The panel
+
+Render the progress panel and hand it over:
+
+```bash
+python3 "${PLUGIN_ROOT}/scripts/render_panel.py" progress --system "$system"
+```
+
+It writes `analysis/$system/PANEL.html`: where the work stands, the proof verdict per module, the
+one next step, and the fleet of subagents this session has seen (the runtime reports each subagent's
+start and stop to the plugin's hooks, so the panel knows which are still running). Deliver the file
+with a `<deliver-assets>` block (`<media type="file" src="<absolute path>" />`) and say in one line
+what it shows. If `python3` is missing or the render fails, say so in one line and carry on: the three
+lines above already answer the question.

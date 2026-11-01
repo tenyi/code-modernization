@@ -3,7 +3,7 @@
   "name": "code-modernization",
   "displayName": "Code Modernization",
   "version": "2.0.0",
-  "description": "Guided modernization for any legacy codebase: an assessment, a structure map, the business rules mined from the code, a plan a person approves, then an uplift, a rewrite or a rebuild with independent proof that the new code behaves like the old. Includes security hardening, a one-page HTML report and eight specialist subagents.",
+  "description": "Guided modernization for any legacy codebase: an assessment, a structure map, the business rules mined from the code, a plan a person approves, then an uplift, a rewrite or a rebuild with independent proof that the new code behaves like the old. Includes security hardening, a one-page HTML report, live progress panels and eight specialist subagents.",
   "author": "Anthropic (original Claude Code plugin), ported to MiniMax Code",
   "icon": "icon.png",
   "darkIcon": "icon-dark.png",

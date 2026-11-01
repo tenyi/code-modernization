@@ -24,6 +24,8 @@ Say how many rules will be asked (about a minute per ten). If none is left, say 
 
 ## 2 — Ask
 
+Render the review deck first (`python3 "${PLUGIN_ROOT}/scripts/render_panel.py" review --system "$system" --scope ${scope:-flagged}`), which writes `analysis/$system/REVIEW_DECK.html`: the same cards, with their citations and what has already been decided, one after another. Deliver the file with a `<deliver-assets>` block so the person can read it beside the questions. The deck is a page to read, not a decision: every answer is still given in a pop-up below.
+
 Use the `ask_user` tool, never chat text, up to four rules per call (a questionnaire takes at most four questions). One question per rule: its id as the header; the title, the plain-English statement, its Given/When/Then in one line, the cited lines (`file:line`) and the suspected defect or SME question if it has one as the question; and three options: **Right** (the rule is correct and wanted), **Wrong, or not wanted** (it misdescribes the code, or the code does this today but should not), **Not sure** (needs a discussion). The person can type a note instead of choosing: what is right, or the question that needs answering. Keep it, in their words. Stop when they say to. Verdicts the person already typed in the request (`RULE-004 wrong: it truncates on purpose`) are recorded as given, with no pop-up for those rules. Without the tool and without typed verdicts (a headless run) do not guess: leave every rule unreviewed and say so.
 
 ## 3 — Record

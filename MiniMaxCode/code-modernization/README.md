@@ -155,15 +155,27 @@ checks for that rule and tells you how to add one:
 `analysis/` and `modernized/` should be committed; the rest of `analysis/` may hold secrets and
 working notes, so `analysis/.gitignore` is worth keeping.
 
-## The two hooks
+## The hooks and the panels
 
 | Hook | What it does |
 | --- | --- |
 | `PostToolUse` on `read` | X-ray: when the agent reads a legacy file, what the analysis already knows about it (callers, data it touches, the rules citing it) rides along as context only the model sees. |
 | `UserPromptSubmit` and `SessionStart` | The progress line: where the modernization stands and the one next step, injected as context. |
+| `SubagentStart`, `SubagentStop` and `PostToolUse` on `task` | The fleet: which subagents this session has seen, which are still running, what each said last, and whether several of them failed the same way. It is kept in `analysis/.fleet.json`. |
 
-Both are plain `python3` scripts under `scripts/`. They fail open: if `python3` is missing or an
+All of them are plain `python3` scripts under `scripts/`. They fail open: if `python3` is missing or an
 artifact is malformed, the turn continues untouched.
+
+The fleet and the artifacts it describes are drawn into three pages, next to the report:
+
+| Panel | What it shows |
+| --- | --- |
+| `analysis/<system>/PANEL.html` | The progress pane: the stages, the proof verdict per module, the one next step, and the fleet. |
+| `analysis/<system>/REVIEW_DECK.html` | The rule review deck: the flagged cards with their citations, and what a person has already decided. |
+| `analysis/<system>/SIGNOFF.html` | The sign-off card: the verdict, what the proof does not establish, and the sign-off block. |
+
+`modernize-status`, `modernize-review` and `modernize-verify` render them and hand the file over.
+Each page is a snapshot of the moment it was rendered; the next render refreshes it.
 
 ## What changed in the port
 
@@ -176,7 +188,7 @@ not:
 | `AskUserQuestion` pop-ups | the `ask_user` questionnaire tool. |
 | `Task` / `Agent` subagent types | the `task` tool with `agent_name: "code-modernization:<name>"`. |
 | Scripted `Workflow` fan-outs (rule mining, portfolio survey, delta catalog, uplift migration, scaffolding, security scan) | the same fan-outs, written as procedure in the skills: the agent starts the subagents with `task`, in batches, and merges their JSON results the way the workflows merged them. |
-| Live TUI progress pane, review deck and sign-off dialog | the HTML report (`analysis/<system>/REPORT.html`), the interactive map (`TOPOLOGY.html`), the `ask_user` pop-ups, and the two hooks above. |
+| Live TUI progress pane, review deck and sign-off dialog | the same three surfaces as pages: `analysis/<system>/PANEL.html`, `REVIEW_DECK.html` and `SIGNOFF.html`, written by `scripts/render_panel.py`. The pane's live part is the fleet, kept from the runtime's own subagent events by the plugin's hooks and drawn into the page. |
 | Plugin settings (`userConfig`) | the workspace artifacts and the `~/.minimax/permission.json` rule; no plugin settings panel. |
 | Usage telemetry (whole counts only, on by default) | removed. Nothing is sent anywhere, by this plugin, ever. |
 | `.claude/settings.json`, `CLAUDE.md` | `~/.minimax/permission.json`, `AGENTS.md`. |

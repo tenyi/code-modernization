@@ -1,6 +1,6 @@
 # code-modernization 多 runtime 移植倉庫
 
-同一套「遺產系統現代化」工作流，在四個 runtime 各有一份移植。這個倉庫把它們並排放著，方便對照、比較與備份。
+同一套「遺產系統現代化」工作流，在五個 runtime 各有一份移植。這個倉庫把它們並排放著，方便對照、比較與備份。
 
 | 目錄 | Runtime | 誰做的 | 來源（真正被 runtime 讀取的地方） |
 | --- | --- | --- | --- |
@@ -8,6 +8,7 @@
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
 | `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
+| `OpenCode/code-modernization/` | OpenCode V2（`opencode.ai/v2`） | 以 MiniMax Code 版為母版移植 | 專案 `opencode.json(c)` 的 `skills`/`plugins` 陣列 + agents 目錄，見 [OpenCode 安裝說明](OpenCode/README.md) |
 
 Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
 author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生。
@@ -15,7 +16,7 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 > ⚠️ MiniMax 與 Antigravity 目錄是**鏡像**，不是執行來源。改完後要同步回上表的來源目錄才會生效；
 > 反過來，那邊被別的工具改動時，這裡會顯示為 diff。
 
-## 兩份移植的差異
+## 各份移植的差異
 
 **MiniMax Code 版**（`MiniMaxCode/`）
 
@@ -44,6 +45,18 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 - extension 另外匯出 `$CODE_MODERNIZATION_ROOT`，技能用它找到套件裡的 `scripts/` 與 `assets/`
 - 套件格式：pi package（`package.json` + `pi` manifest）+ `skills/` + `agents/` + `extensions/` +
   `scripts/` + `assets/`
+
+**OpenCode 版**（`OpenCode/`）
+
+- 以 MiniMax Code 版為母版，13 個技能是 OpenCode 原生 skill 格式（`skills/<name>/SKILL.md`），
+  以 `skill` 工具按 **id** 載入，訊息裡 `@<name>` 提及亦可；8 個代理是 OpenCode 代理檔
+  （`mode: subagent` + `permissions` 封閉清單；V2 禁止 agent 檔用 `tools` 欄位）
+- **不需要 extension**：OpenCode 內建 `question`（問卷）、`subagent`（子代理）與 plugin hook API
+- 母版的 `hooks/hooks.json` 換成套件內 server plugin（`plugin/index.ts`）：tool `execute.after`
+  跑 x-ray、session `prompt` hook 跑狀態列（以 session instruction entry 注入）、`shell`
+  `create.before` 匯出 `$CODE_MODERNIZATION_ROOT`；全部 fail open、5 秒逾時
+- 套件格式：普通目錄（`skills/` + `agents/` + `plugin/` + `scripts/` + `assets/`），
+  靠 `opencode.json(c)` 的 `skills`/`plugins` 陣列與 agents 目錄載入，無 manifest
 
 ## 安裝到 pi
 
@@ -128,8 +141,10 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 `PORTING-SPEC.md` 是 MiniMax Code 與 Antigravity 兩次移植共用的轉換規格：Claude Code 的工具對應、
 skill frontmatter 契約、fan-out 措辭、禁用 token 清單。pi 版另有一份
 [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md)：同一套母版，但要換成 pi 的技能發現、工具名、
-以及「pi 缺什麼就由 extension 補什麼」的對應表。日後上游 Anthropic plugin 更新時，
-依這兩份規格再轉一次即可。
+以及「pi 缺什麼就由 extension 補什麼」的對應表。OpenCode 版也有一份
+[`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md)：mcode → OpenCode V2 的工具對應、
+技能/代理檔格式、plugin（hooks 對應）與權限段落改寫規則。日後上游 Anthropic plugin 更新時，
+依這三份規格再轉一次即可。
 
 ## 同步
 
@@ -144,6 +159,9 @@ rsync -a --delete --exclude '.git' --exclude '__pycache__' \
 #   用在哪個專案就裝在哪個專案（寫入該專案的 .pi/settings.json）
 cd /path/to/your/project && pi install -l /path/to/mcode-port-work/Pi/code-modernization
 
+# OpenCode 版：單向同步母版 → 移植的非改寫檔，之後要重新套用兩處腳本字串；
+#   完整命令（含 exclude 與字串回補）見 OpenCode/README.md 的「同步」節
+
 # 提交
 git add -A && git commit -m "sync ports"
 ```
@@ -151,7 +169,7 @@ git add -A && git commit -m "sync ports"
 ## 檢查
 
 改動後至少確認：manifest 可解析、skill frontmatter 的 `name` 與目錄同名、
-`${PLUGIN_ROOT}`（或該 runtime 的對應變數：pi 是 `$CODE_MODERNIZATION_ROOT`）指到的檔案真的存在、
+`${PLUGIN_ROOT}`（或該 runtime 的對應變數：pi 與 OpenCode 都是 `$CODE_MODERNIZATION_ROOT`）指到的檔案真的存在、
 Python 能編譯。pi 版另外確認 13 個技能都被 pi 發現、extension 能載入：
 
 ```sh
@@ -159,3 +177,6 @@ cd Pi/code-modernization
 python3 -m py_compile scripts/*.py
 pi --skill ./skills --no-session -p "列出你可用的技能"
 ```
+
+OpenCode 版另外跑移植規格 §9 的檢查（py_compile、禁用 token 的全區 grep、
+13 技能／8 代理／plugin 的發現驗證），命令見 [`OpenCode/README.md`](OpenCode/README.md) 的「檢查」節。

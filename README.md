@@ -1,14 +1,18 @@
 # code-modernization 多 runtime 移植倉庫
 
-同一套「遺產系統現代化」工作流，在五個 runtime 各有一份移植。這個倉庫把它們並排放著，方便對照、比較與備份。
+同一套「遺產系統現代化」工作流，在五個 runtime 各有一份移植，另外保留一份上游原版作為對照基準。這個倉庫把它們並排放著，方便對照、比較與備份。
 
 | 目錄 | Runtime | 誰做的 | 來源（真正被 runtime 讀取的地方） |
 | --- | --- | --- | --- |
+| `Claude/code-modernization/` | Claude Code（上游原版，非移植） | Anthropic 官方 `claude-plugins-official` | `~/.claude/plugins/code-modernization/`（鏡像自 `~/Projects/claude-plugins-official/plugins/code-modernization`） |
 | `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
 | `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
 | `OpenCode/code-modernization/` | OpenCode V2（`opencode.ai/v2`） | 以 MiniMax Code 版為母版移植 | 專案 `opencode.json(c)` 的 `skills`/`plugins` 陣列 + agents 目錄，見 [OpenCode 安裝說明](OpenCode/README.md) |
+
+`Claude/` 是**唯讀的上游鏡像**：所有移植的規則都從它推導出來（Claude Code 才有 `AskUserQuestion`、
+`Task`、腳本化 `Workflow`、TypeScript hooks 與 TUI 面板），但倉庫裡這份不作為執行來源。
 
 Antigravity 版來源目錄自帶的 git repo 只有一個 commit（`fd97c16`「初始版本：建立 Antigravity 專用代碼現代化技能版本控管」），
 author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生。
@@ -17,6 +21,16 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 > 反過來，那邊被別的工具改動時，這裡會顯示為 diff。
 
 ## 各份移植的差異
+
+**Claude Code 上游原版**（`Claude/`）
+
+- 唯讀鏡像，內容等同 `~/Projects/claude-plugins-official/plugins/code-modernization`（上游 repo commit `a7ba5b93`）
+- 13 個 **slash command**（`commands/*.md`，`argument-hint` + `$ARGUMENTS`）、8 個 `agents/*.md`、
+  `hooks/`（TypeScript：x-ray、狀態列、TUI 面板、review deck、簽核）、`workflows/*.js`（腳本化 fan-out）、
+  `scripts/`、`tests/`（vitest + pytest）
+- 帶遙測（`scripts/telemetry.py`，整數計數）、`.claude-plugin/plugin.json` manifest、`userConfig` 設定面板
+- 是所有移植的**轉換來源**：Claude Code 的工具對應、skill frontmatter 契約、fan-out 契約、
+  禁用 token 清單都以此為準
 
 **MiniMax Code 版**（`MiniMaxCode/`）
 
@@ -150,6 +164,8 @@ skill frontmatter 契約、fan-out 措辭、禁用 token 清單。pi 版另有�
 
 ```sh
 # 從來源目錄更新鏡像
+rsync -a --delete --exclude '.git' --exclude '__pycache__' \
+  ~/Projects/claude-plugins-official/plugins/code-modernization/ Claude/code-modernization/
 rsync -a --delete --exclude '.git' --exclude '__pycache__' \
   ~/.minimax/plugins/code-modernization/ MiniMaxCode/code-modernization/
 rsync -a --delete --exclude '.git' --exclude '__pycache__' \

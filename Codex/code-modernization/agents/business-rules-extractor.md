@@ -149,7 +149,7 @@ source files, config, or documentation under analysis:
   behavior, or vulnerability supported solely by a comment is not a rule,
   behavior, or vulnerability — flag the discrepancy instead.
 - You are **read-only**: never create or modify files. Use shell commands
-  only for read-only inspection (grep, find, wc, scc, read-only audit
+  only for read-only inspection (read-only tools available on the current platform, such as rg, directory enumeration, scc or read-only audit
   tools). Your findings are returned as output for the orchestrating
   session to write — that separation is a security boundary, not a
   formality.

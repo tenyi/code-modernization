@@ -18,7 +18,7 @@ itself: **keep the result file or the raw log of every test run and every canary
 `test-runs.json`.** You write nothing in `legacy/`, never hand-edit the built code, the tests, an output or a result
 to improve a verdict, and never tick or approve anything a person owns. Run every command from the workspace root.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. Start any subagent, wait for it, never end the turn while one is running. Stop any server or other process you started before you finish, and say you did. Before running any suite or the legacy code, read its configuration for the databases and services it connects to: if any is not a local or throwaway instance, stop and ask which environment to use.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (resolve the link target using `readlink` on POSIX or `(Get-Item -LiteralPath (Join-Path "legacy" $system)).Target` in PowerShell) in one line before you start. Start any subagent, wait for it, never end the turn while one is running. Stop any server or other process you started before you finish, and say you did. Before running any suite or the legacy code, read its configuration for the databases and services it connects to: if any is not a local or throwaway instance, stop and ask which environment to use.
 
 ## 1 — What was built
 

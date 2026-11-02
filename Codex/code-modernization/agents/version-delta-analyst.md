@@ -36,8 +36,8 @@ has none of that, so "installed" ≠ "produced findings". **Never fold a tool's
 findings into the catalog unless it actually ran** — instead record "coverage
 lost: <tool> needs restore+network, unavailable here".
 
-**Run a migration tool only on a scratch copy** of the code (rsync it into a
-temporary folder), never inside `legacy/`: builds and dry runs write output and
+**Run a migration tool only on a scratch copy** of the code (copy it into a
+temporary folder using the safe copying rules in the uplift procedure), never inside `legacy/`: builds and dry runs write output and
 download plugins, and the source is never touched.
 
 - **.NET**: `dotnet upgrade-assistant` (loads + restores the project; also

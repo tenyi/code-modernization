@@ -12,7 +12,7 @@ Build a **dependency and topology map** of the system and render it as an
 interactive page. The assessment found the domains; this goes one level down:
 how do the *pieces* connect? It is the map an engineer needs before touching anything.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (resolve the link target using `readlink` on POSIX or `(Get-Item -LiteralPath (Join-Path "legacy" $system)).Target` in PowerShell) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
 
 **Nothing edits the legacy source.** `legacy/` is read-only; everything you write goes to `analysis/$system/` — the extraction script, `topology.json`, the Mermaid files and the rendered `TOPOLOGY.html`.
 
@@ -168,23 +168,13 @@ as containers, modules sized by LOC), dependency edges, search, a per-node sideb
 edge-kind toggles, and a walkthrough that plays each persona flow. Build it from the
 template this plugin ships; do not hand-write a viewer:
 
+Run the packaged `scripts/render_topology.py` with Python 3, passing the absolute or workspace-relative `analysis/$system` directory as its argument. The script locates the template relative to itself and reads and writes UTF-8. For example on POSIX:
+
 ```bash
-python3 - "${CODE_MODERNIZATION_ROOT}/assets/topology-viewer.html" analysis/$system <<'EOF'
-import json, sys
-tpl_path, out_dir = sys.argv[1], sys.argv[2]
-tpl = open(tpl_path).read()
-marker = "/*__TOPOLOGY_DATA__*/ null"
-assert marker in tpl, f"injection marker not found in {tpl_path}"
-data = json.dumps(json.load(open(f"{out_dir}/topology.json")))
-# topology.json comes from UNTRUSTED source (names from filenames, observations from
-# analyzed code). The data lands in a <script> block, which the HTML parser closes on
-# the literal bytes "</script>" whatever the JS string context, and json.dumps does not
-# escape "<". Escape it to kill the breakout.
-data = data.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-open(f"{out_dir}/TOPOLOGY.html", "w").write(tpl.replace(marker, "/*__TOPOLOGY_DATA__*/ " + data))
-print(f"wrote {out_dir}/TOPOLOGY.html")
-EOF
+python3 "${CODE_MODERNIZATION_ROOT}/scripts/render_topology.py" "analysis/$system"
 ```
+
+On Windows PowerShell use `python "$env:CODE_MODERNIZATION_ROOT/scripts/render_topology.py" "analysis/$system"` (or `py -3` in place of `python`).
 
 The viewer is self-contained (the d3 subset it needs is inlined), so it works offline.
 If the template is not found, the package path is incorrect: report

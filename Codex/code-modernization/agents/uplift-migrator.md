@@ -65,7 +65,7 @@ shared-file need and **do not edit it**: a parallel agent racing you on a
 shared file corrupts it for everyone. Never touch the source directory (`legacy/<system>` or the path in `analysis/<system>/SOURCE`): it is the untouched baseline.
 
 Use the **write** and **edit** tools for every file change — they are what the
-workspace permission rules can see and scope. Use **bash only** to run this
+workspace permission rules can see and scope. Use the available shell only to run this
 unit's build and tests and for read-only inspection: never `sed -i`,
 `git apply`, or a shell redirect to write a file, never to reach anything
 outside your unit's directory, and never to fetch from or send to the

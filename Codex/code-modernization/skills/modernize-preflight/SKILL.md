@@ -28,11 +28,8 @@ put). Nothing is ever copied for you.
 
 - If the arguments carry `--source <path>` (a directory, absolute or relative), check that it exists and is
   not the filesystem root or the user's home directory, then, only if `legacy/$system` does not exist yet, create
-  the link: `mkdir -p legacy && ln -s <absolute path> legacy/$system` (on Windows a junction: `cmd /c mklink /J
-  legacy\$system <absolute path>`). If `legacy/$system` already exists and points elsewhere, say so and change
-  nothing.
-- Say where `legacy/$system` points (`readlink legacy/$system`, or "a directory in this workspace") in one line
-  before you start.
+  the link. On POSIX: `mkdir -p legacy && ln -s <absolute path> legacy/$system`. On Windows PowerShell: create `legacy` if needed and run `New-Item -ItemType Junction -Path (Join-Path 'legacy' $system) -Target $absoluteSource`, with `$absoluteSource` resolved first. Quote paths containing spaces. If `legacy/$system` already exists and points elsewhere, say so and change nothing.
+- Report the resolved link target using the current platform's tools, or say it is a directory in this workspace.
 - If `$target_stack` starts with `--`, it is a flag, not a stack.
 
 Never modify anything under `legacy/$system`.
@@ -73,11 +70,11 @@ file split.
 
 ## Check 2 — Analysis tooling
 
-Check availability (`command -v`), version and what degrades without it:
+Check availability (for example, `command -v` on POSIX or `Get-Command` in PowerShell), version and what degrades without it:
 
 | Tool | Used by | Without it |
 |---|---|---|
-| `scc` (or `cloc`) | assess | LOC and complexity fall back to `find` + `wc`; the COCOMO index gets coarser |
+| `scc` (or `cloc`) | assess | LOC and complexity fall back to platform-appropriate file enumeration and line counting; the COCOMO index gets coarser |
 | `python3` (3.8 or newer; on Windows it may be `python` or `py -3`: use whichever runs Python 3 wherever a step says `python3`) | map, extract-rules, verify, report | the dependency scripts, the shard builder, the proof scripts and the HTML report can't run |
 | `lizard` | assess --portfolio | complexity is estimated from decision-keyword counts |
 
@@ -115,7 +112,7 @@ flag, a dependency the standard feed cannot resolve). Level 2 being *impossible*
 failure: equivalence then falls back to recorded traces.
 
 If `$target_stack` was given, prove it with a throwaway project, not a version
-string: in a scratch directory outside `legacy/$system` (`mktemp -d`), create the
+string: in a scratch directory outside `legacy/$system` (a platform-appropriate temporary directory), create the
 smallest project the stack allows, restore, build, run one passing test with its
 real package manager and test framework, then delete it. A target that cannot
 build here is a finding.

@@ -5,7 +5,7 @@ description: Analyze and modernize a legacy codebase with evidence-backed busine
 
 # Code modernization
 
-Select the procedure matching the request and read its `SKILL.md` under `skills/`. These are procedures belonging to this skill, not independently installed skills. Resolve all paths below relative to this file's directory. For every shell invocation using `${CODE_MODERNIZATION_ROOT}`, set it to the absolute directory containing this file in that same shell invocation; do not assume the runtime defines it. Workspace paths remain relative to the user's project.
+Select the procedure matching the request and read its `SKILL.md` under `skills/`. These are procedures belonging to this skill, not independently installed skills. Resolve all paths below relative to this file's directory. Shell examples use POSIX syntax and `python3`. On Windows use PowerShell and a working Python 3 command (`python` or `py -3`), replace `${CODE_MODERNIZATION_ROOT}` with `$env:CODE_MODERNIZATION_ROOT`, and translate shell-specific syntax. For every invocation, set that variable to the absolute directory containing this file in the same shell invocation; do not assume the runtime defines it. Quote paths and arguments containing spaces. Use the platform-specific alternatives stated in each procedure. Workspace paths remain relative to the user's project.
 
 - Start or choose a path: [modernize](skills/modernize/SKILL.md)
 - Environment and human context: [preflight](skills/modernize-preflight/SKILL.md)

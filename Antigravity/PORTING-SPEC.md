@@ -21,13 +21,13 @@
 | `ask_user` 問卷（1–4 題、每題 2–4 選項） | **`ask_question`** 工具（pop-up） | 散文裡「a pop-up」的說法保留（它確實是疊層問卷） |
 | `task` 工具（`agent_name`） | **`invoke_subagent`**：`Role`（專責角色）、`TypeName`（`'self'` 或 `'inherit'`）、`description`、`prompt` | 散文裡舉例用 'Legacy Analyst'、'Security Auditor' 這類**角色名**；實際 `Role` 值用代理 id 的 kebab-case（`legacy-analyst`） |
 | 沒有 Workflow 工具，fan-out 用多次 `task` | 同樣：多次 `invoke_subagent` | 見 §3 |
-| `${PLUGIN_ROOT}` | **`${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}`** | Antigravity 不保證設定 `SKILL_ROOT`，**必須帶 fallback** |
+| `${PLUGIN_ROOT}` | **`<plugin>`** | 由技能運行時依據自身路徑解析外掛根目錄，跨平台支援 macOS/Linux/Windows，不依賴 bash 專屬語法 |
 | `${PLUGIN_DATA}` | 無對應 | 不使用 |
 | `read`/`write`/`edit`/`bash`/`grep`/`glob` | **`read_file`/`write_file`/`edit_file`/`run_command`**（另有 grep/glob） | 散文裡的工具名要一併改；「Use bash ONLY…」→「Use `run_command` ONLY…」 |
 | `todowrite` | 無對應 | 母版未使用 |
-| `PostToolUse`(read) → x-ray、`UserPromptSubmit`/`SessionStart` → 狀態列 | **有 hooks**：`hooks/hooks.json`，與母版同樣三個，只把 `${PLUGIN_ROOT}` 換成 `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}` | 見 §4 |
-| `.minimax-plugin/plugin.json` manifest | **無 manifest**（Gemini CLI 技能目錄慣例） | 套件裡不放 manifest |
-| `~/.minimax/permission.json`、`/permission status`、ask/auto 模式 | **無對應**：靠 Antigravity 的 workspace guardrails + 檔案系統 `chmod` | 見 §4 |
+| `PostToolUse`(read) → x-ray、`UserPromptSubmit`/`SessionStart` → 狀態列 | **有 hooks**：`hooks.json`（根目錄與 `hooks/hooks.json`），提供 `command` (Unix) 與 `commandWindows` (Windows) | 見 §4 |
+| `.minimax-plugin/plugin.json` manifest | **`plugin.json`**（Antigravity Plugin 規範） | 宣告外掛名稱與預設狀態（`disabled: true`），支援生命週期管理 |
+| `~/.minimax/permission.json`、`/permission status`、ask/auto 模式 | **無對應**：靠 Antigravity 的 workspace guardrails + 跨平台檔案唯讀屬性（POSIX: `chmod`；Windows: `attrib`） | 見 §4 |
 
 ---
 
@@ -49,9 +49,9 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 <母版的程序散文，逐行對應>
 ```
 
-- **沒有 `**Package files.**` 段**：Antigravity 用 `${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}`
-  的 fallback 寫法，散文裡直接寫
-  `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`。
+- **跨平台宣告標頭**：每個技能開頭宣告 `**Plugin directory.**`（解析 `<plugin>`，指引雙平台命令選擇與 Python 調用），
+  消除純 bash 的 `${SKILL_ROOT...}` 擴展，改寫為相容的 `"<plugin>/scripts/<script>.py"`。所有平台相依命令（如 readlink/Get-Item、
+  find/Measure-Object、head/Select-Object、tee/Tee-Object 等）均提供 **POSIX** 與 **PowerShell** 雙標籤。
 - 根目錄另有一個 **`SKILL.md` 入口**：**繁體中文**說明 + 一張「步驟 → 程序檔」的表格，
   連結寫成 `file:///skills/modernize-<name>/SKILL.md`。這是 Antigravity 技能目錄的慣例，
   **只有這個入口用中文**；13 個流程 Skill 的正文仍是英文。
@@ -109,9 +109,9 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 - **legacy 保護**改由兩層機制承擔：
   1. Antigravity 的 workspace guardrails：寫入只留在 `analysis/` 與 `modernized/`，
      `legacy/<name>/` 視為唯讀。
-  2. 檔案系統層的硬保護：`chmod -R a-w legacy/`（工作結束後 `chmod -R u+w legacy/` 還原）。
+  2. 檔案系統層的硬保護：POSIX: `chmod -R a-w legacy/`（還原 `chmod -R u+w legacy/`）；Windows: `attrib +r legacy\* /s /d`（還原 `attrib -r legacy\* /s /d`）。
 - `modernize-preflight` 的 Check 7 改寫成「檢查 `legacy/` 是否唯讀 → ✅ 或 ⚠️，**永不 ❌**、
-  永不替使用者改設定」，並教使用者下 `chmod -R a-w legacy/`。
+  永不替使用者改設定」，並提供 POSIX (`chmod -R a-w legacy/`) 與 Windows (`attrib +r legacy\* /s /d`) 指令。
 
 ---
 
@@ -141,14 +141,17 @@ skills: []
 
 ```
 Antigravity/code-modernization/
+  plugin.json                       外掛清單（宣告 disabled: true）
   SKILL.md                          入口（繁中說明 + 步驟表格）
   agents/<name>.md                  8 個專責角色
-  skills/<name>/SKILL.md            13 個流程技能
-  hooks/hooks.json                  3 個 hook（路徑用 $SKILL_ROOT fallback）
-  scripts/*.py                      10 支，與母版逐位元相同
+  skills/<name>/SKILL.md            13 個流程技能（支援 POSIX + PowerShell）
+  hooks.json                        根目錄 lifecycle hooks（含 commandWindows）
+  hooks/hooks.json                  子目錄相容 hooks
+  scripts/*.py                      13 支 Python 腳本（含跨平台 render_topology.py）
   assets/report-template.html
   assets/topology-viewer.html
   assets/vendor/mermaid.min.js
+  tests/test_portability.py         跨平台指令檢驗腳本
 ```
 
 - **不放** `.minimax-plugin/`（無 manifest）。

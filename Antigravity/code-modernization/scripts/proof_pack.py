@@ -601,7 +601,7 @@ def check_tests_kept(tc, person):
         return row("kept", "gap", "%s (%d test file(s) in the working copy)." % (tc["why"][:1].upper() + tc["why"][1:], tc["workTests"]))
     reasons = []
     if c["removed"]:
-        reasons.append("%d legacy test file(s) are missing from the working copy (%s)" % (c["removed"], ", ".join(x["path"].rsplit("/", 1)[-1] for x in tc["removed"][:3])))
+        reasons.append("%d legacy test file(s) are missing from the working copy (%s)" % (c["removed"], ", ".join(x["path"].replace("\\", "/").rsplit("/", 1)[-1] for x in tc["removed"][:3])))
     if tc["legacyTests"] and c["changed"] > uplift_checks.SHARE_LIMIT * tc["legacyTests"]:
         reasons.append("%d of %d legacy test files (%.0f%%) were changed, more than the 25%% allowed" % (c["changed"], tc["legacyTests"], 100 * tc["share"]))
     if reasons:

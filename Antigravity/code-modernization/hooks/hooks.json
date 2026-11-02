@@ -3,12 +3,12 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "read",
+        "matcher": "read_file|read",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/xray.py\"",
-            "commandWindows": "python \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}\\scripts\\xray.py\"",
+            "command": "python3 ../scripts/xray.py",
+            "commandWindows": "python ..\\scripts\\xray.py",
             "timeout": 5
           }
         ]
@@ -19,8 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/status.py\"",
-            "commandWindows": "python \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}\\scripts\\status.py\"",
+            "command": "python3 ../scripts/status.py",
+            "commandWindows": "python ..\\scripts\\status.py",
             "timeout": 5
           }
         ]
@@ -31,8 +31,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/status.py\"",
-            "commandWindows": "python \"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}\\scripts\\status.py\"",
+            "command": "python3 ../scripts/status.py",
+            "commandWindows": "python ..\\scripts\\status.py",
             "timeout": 5
           }
         ]

@@ -3,6 +3,7 @@ name: modernize-status
 description: Where am I? Progress, what is stale, and the exact next step to run — start here when unsure
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load this skill with the `skill` tool, name `modernize-status`.
 **Arguments.** `<system>`
 Bound as: `$system`.
@@ -10,7 +11,7 @@ Bound as: `$system`.
 
 Report where the modernization of `$system` stands, in one screen. This step inspects and never modifies,
 except that it refreshes `analysis/$system/REPORT.html` (`python3
-"${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). If nothing
+"<plugin>/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). If nothing
 exists yet, the answer is `modernize $system --source <path to the code>`, which asks what the person wants and starts preflight.
 
 Every step of this product writes only to `analysis/$system/` and `modernized/`, and never edits the legacy
@@ -68,7 +69,7 @@ End with three lines:
 Render and surface the interactive Generative UI dashboard for `$system`:
 
 ```bash
-python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_widgets.py" progress --system "$system"
+python3 "<plugin>/scripts/render_widgets.py" progress --system "$system"
 ```
 
 Then output the embed tag directly in the conversation response:

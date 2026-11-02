@@ -3,6 +3,7 @@ name: modernize-extract-rules
 description: Mine the business rules out of the code into testable Given/When/Then rule cards with file:line citations; use when the system's rules must be extracted, independently re-checked and rendered as a specification before anything is rewritten.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `modernize-extract-rules`.
 **Arguments.** `<system> [module-pattern]`
 Bound as: `$system`, `$module_pattern`.
@@ -16,7 +17,7 @@ engineers about to retire. If a module pattern was given (`$module_pattern`), fo
 there; otherwise cover the whole system. Prioritize calculation, validation, eligibility
 and state-transition logic over plumbing.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `modernize $system --source <path to the code>`. Run every subagent in the foreground and wait for its result: never end your turn while one is still running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `modernize $system --source <path to the code>`. Run every subagent in the foreground and wait for its result: never end your turn while one is still running.
 
 Extraction is **sharded per module**, so each extractor reads a small slice (whole-estate
 passes miss the tail and their contexts balloon); each rule's `file:line` citation is
@@ -39,7 +40,7 @@ consolidation pass, the data-object catalog).
 ## 1 — Build the shard list (module mode)
 
 ```bash
-python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/make_shards.py" $system "$module_pattern"
+python3 "<plugin>/scripts/make_shards.py" $system "$module_pattern"
 ```
 
 It reads `analysis/$system/topology.json` when `map` has run (one shard per module, small
@@ -626,7 +627,7 @@ P0 rules.
 ## 10 — Render
 
 ```bash
-python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_rules.py" $system
+python3 "<plugin>/scripts/render_rules.py" $system
 ```
 
 It reads `analysis/$system/rules_result.json` and writes `analysis/$system/BUSINESS_RULES.md`
@@ -644,7 +645,7 @@ and how many rules were folded together because they described the same behavior
 than one file (`stats.consolidated`). Say how many candidates no referee could judge
 (`unverifiedRules`) and how many shards still have a gap (`rerunModules`).
 
-Refresh the report: `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system` (a
+Refresh the report: `python3 "<plugin>/scripts/build_report.py" $system` (a
 convenience: if it fails or `python3` is missing, say so in one line and carry on). The
 next step is the skill `modernize-review` — load it with the `skill`
 tool — when rules are flagged for a person (P0 rules with a suspected defect, an SME

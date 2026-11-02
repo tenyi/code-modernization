@@ -3,6 +3,7 @@ name: modernize-assess
 description: What am I dealing with? Inventory, complexity, debt, security and a recommended modernization pattern — use when assessing a legacy system before modernizing it, or when ranking a portfolio of systems on one page.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `modernize-assess`.
 **Arguments.** `<system> [--show-secrets] | --portfolio <parent-dir>`
 Bound as: `$system`, `$args` — `$system` is the system name, `$args` is the whole argument text as it arrived in the user's message.
@@ -13,7 +14,7 @@ directory that follows. Otherwise run **Single-system mode** on `$system`, the
 first token. Flags go after it (`<system> --show-secrets`): a flag in first place
 would be read as the system name.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
 
 **Nothing edits the legacy source.** `legacy/` is read-only; everything you write goes to `analysis/` — `analysis/$system/` in single-system mode, `analysis/portfolio.html` in portfolio mode.
 
@@ -33,7 +34,7 @@ prompt must spell out the JSON to return and say: *Return only this JSON object 
 prose, no code fences.* Never end the turn while a subagent is still running, and collect
 every result before writing any artifact.
 
-List the subdirectories first (`ls -d <parent-dir>/*/ | xargs -n1 basename`), tell the
+List the subdirectories first (POSIX: `ls -d <parent-dir>/*/ | xargs -n1 basename`; PowerShell: `Get-ChildItem -Directory <parent-dir> | Select-Object -ExpandProperty Name`), tell the
 user the count (30 systems means 30 agents), then run one survey agent per system: one
 `invoke_subagent` call each, `Role: "legacy-analyst", TypeName: "self"`, `description` naming
 the system being surveyed, and the prompt below.
@@ -118,8 +119,7 @@ for ranking systems — **not** a duration or a cost: never render it as person-
 weeks or dates (agentic transformation does not follow COCOMO's human-team productivity
 assumptions).
 
-Per system: SLOC and dominant language (`cloc --csv`, else `scc`, else `find` +
-`wc -l`), file count, complexity measured one way for every system (`scc`'s per-file
+Per system: SLOC and dominant language (`cloc --csv`, else `scc`, else POSIX: `find legacy/$system -type f -exec wc -l {} +`; PowerShell: `Get-ChildItem -Recurse -File legacy/$system | Measure-Object -Line`), file count, complexity measured one way for every system (`scc`'s per-file
 complexity summed, divided by KSLOC, and the most complex single file; without `scc`,
 count decision keywords the same way everywhere), dependency freshness (age or pinned-version count of the
 manifest), documentation coverage (source files whose opening comment
@@ -144,13 +144,13 @@ budget meeting.
 
 ## Step 1 — Inventory
 
-Run `scc legacy/$system` and `scc --by-file -s complexity legacy/$system | head -25` (the most
+Run `scc legacy/$system` and `scc --by-file -s complexity legacy/$system | head -25` (POSIX) or `scc --by-file -s complexity legacy/$system | Select-Object -First 25` (PowerShell) (the most
 complex files). Use scc's COCOMO figure **only as a relative scale index** and
 ignore its "Estimated Schedule Effort" and dollar lines: they project a
 human-team timeline and budget, which are invalid for agentic modernization.
 
 Without `scc`, use `cloc legacy/$system`, then compute the index yourself
-(`2.94 × KSLOC^1.10`); without that, `find` + `wc -l` by extension and rank
+(`2.94 × KSLOC^1.10`); without that, count the lines per extension yourself (POSIX: `find legacy/$system -type f -name '*.<ext>' -exec wc -l {} +`; PowerShell: `Get-ChildItem -Recurse -File -Include *.<ext> legacy/$system | Measure-Object -Line`) and rank
 complexity by decision keywords (`IF`/`EVALUATE`/`PERFORM` for COBOL,
 `if`/`for`/`while`/`case`/`catch` for C-family). Say which tool you used.
 
@@ -240,7 +240,7 @@ legacy-analyst.
 
 ## Step 7 — Finish
 
-Refresh the report: `python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`
+Refresh the report: `python3 "<plugin>/scripts/build_report.py" $system`
 (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Tell the user the assessment is ready
 (`analysis/$system/ASSESSMENT.md`, and the report at `analysis/$system/REPORT.html`) and
 that the next step is the skill `modernize-map $system` — load it

@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | `Claude/code-modernization/` | Claude Code（上游原版，非移植） | Anthropic 官方 `claude-plugins-official` | `~/.claude/plugins/code-modernization/` |
 | `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent）；2.2.0，**單一版本支援 Windows、macOS、Linux** | `~/.minimax/plugins/code-modernization/` |
-| `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
+| `Antigravity/code-modernization/` | Antigravity（Plugin / 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，單一版本支援 Windows、macOS、Linux | `~/.gemini/config/plugins/code-modernization/` |
 | `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植；單一版本支援 Windows、macOS、Linux | 見 [Codex 安裝說明](Codex/README.md) |
 | `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版、**以 `Claude/` 為事實來源**移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
 | `OpenCode/code-modernization/` | OpenCode V2（`opencode.ai/v2`） | 以 MiniMax Code 版為母版移植 | 專案 `opencode.json(c)` 的 `skills`/`plugins` 陣列 + agents 目錄，見 [OpenCode 安裝說明](OpenCode/README.md) |
@@ -96,19 +96,21 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
 
 **Antigravity 版**（`Antigravity/`）
 
-- 由 Antigravity 裡的 Gemini 3.8 Flash 製作，基於 MiniMax Code 版衍生：
-  共用的 skill／agent／script 檔案沿用 MiniMax Code 版的內容，入口與工具名改成該 runtime 的慣例
-- 同一套 13 個流程 Skill，但入口是根目錄的 `SKILL.md`（繁體中文說明），符合 Gemini CLI 的技能目錄慣例
-- agent 檔案同樣存在，但工具名與載入方式由 Antigravity 決定
+- 由 Antigravity 裡的 Gemini 3.8 Flash 製作，基於 MiniMax Code 版衍生並經**跨平台重構（macOS、Linux、Windows）**：
+  共用的 skill／agent／script 檔案沿用 MiniMax Code 版的架構，入口與工具名改為 Antigravity 原生慣例
+- 同一套 13 個流程 Skill，入口為根目錄的 `SKILL.md`（繁體中文說明），符合 Gemini CLI 與 Antigravity 外掛慣例
 - runtime 對應已收斂乾淨：技能用**裸名**（`modernize-preflight`，無 plugin namespace）、
-  問卷是 `ask_question`、委派是 `invoke_subagent`（`Role`/`TypeName`）、
-  套件路徑走 `$SKILL_ROOT`（fallback `~/.gemini/skills/code-modernization`）、
-  legacy 保護靠 workspace guardrails ＋ `chmod -R a-w legacy/`（無 mcode 的 permission.json／模式）
-- 套件仍附 `hooks/hooks.json`（三個 hook，路徑改用 `$SKILL_ROOT` fallback），
-  但 Antigravity **不保證會執行 hooks**：runtime 不跑時就不會被呼叫，且沒有任何技能依賴它們
+  問卷是 `ask_question`、委派是 `invoke_subagent`（`Role`/`TypeName`）
+- **單一版本支援三大作業系統（跨平台）**：
+  - **`<plugin>` 慣例**：消除 bash 專屬的 `${SKILL_ROOT...}` 擴展，技能正文一律寫 `<plugin>`，並在前言說明路徑解析與 Python 調用
+  - **POSIX／PowerShell 雙指令形式**：每個 shell 相關指令均標註 **POSIX**（macOS／Linux）與 **PowerShell**（Windows），遺留代碼保護提供 POSIX (`chmod`) 與 Windows (`attrib`) 雙指令
+  - **跨平台拓樸渲染**：使用獨立 Python 腳本 `scripts/render_topology.py` 取代 bash here-doc
+  - **生命週期 Hooks 跨平台**：在外掛根目錄提供 `hooks.json`，配置 `command` (Unix `sh -c`) 與 `commandWindows` (Windows `cmd /c`)
+  - **外掛宣告與生命週期管理**：新增 `plugin.json`，支援 Antigravity 外掛生命週期管理（可預設宣告 `disabled: true`）
+  - **自動化檢驗**：附帶 `tests/test_portability.py`，嚴格檢驗無 bash-only 語法、指令成對與 token 規範
 - **TUI 面板的 Antigravity 化**：Claude 的 TUI 介面改成 Antigravity 的 **Generative UI**——
   `assets/widgets/` 的進度看板、規則審核甲板與簽核卡，由 `scripts/render_widgets.py` 組裝，
-  以 `<agent-embed>` 在對話中內嵌
+  以 `<agent-embed>` 在對話中動態內嵌
 - 有自己的 git 歷史（來源目錄內含 `.git`）
 
 **pi 版**（`Pi/`）
@@ -243,7 +245,7 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 | --- | --- | --- |
 | [`PORTING-SPEC.md`](PORTING-SPEC.md) | 全部（共用） | 上游 Claude Code 事實來源、共用規則與檢查清單 |
 | [`MiniMaxCode/PORTING-SPEC.md`](MiniMaxCode/PORTING-SPEC.md) | MiniMax Code（母版） | mcode 工具對應、`skill` 工具與 `code-modernization:` 前綴、`ask_user`、`task`、`hooks/hooks.json`、`.minimax-plugin` manifest、**`<plugin>` 慣例**、**shell 中立（POSIX／PowerShell 雙形式）** |
-| [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Antigravity | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT` fallback、無 hooks（chmod guardrail） |
+| [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Antigravity | Gemini CLI / Antigravity 外掛規範、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`<plugin>` 慣例、shell 中立（POSIX／PowerShell 雙形式）、hooks（command / commandWindows）、跨平台 `render_topology.py` |
 | [`Codex/PORTING-SPEC.md`](Codex/PORTING-SPEC.md) | Codex | 單一技能 + 13 個程序檔、角色指引式代理、`CODE_MODERNIZATION_ROOT` 自行設定、循序執行、無 hooks |
 | [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md) | pi | 技能發現、extension 補三塊拼圖（`task`／`ask_user`／hooks）、`find` 取代 `glob` |
 | [`OpenCode/PORTING-SPEC.md`](OpenCode/PORTING-SPEC.md) | OpenCode | 技能 ID 與 `@` 字串規則、`question`／`subagent`、permissions 封閉清單、server plugin 與 `workflow` 工具、TUI part（`session.panel`／狀態列）、`shell` 取代 `bash` |
@@ -260,7 +262,7 @@ rsync -a --delete --exclude '.git' --exclude '__pycache__' \
 rsync -a --delete --exclude '.git' --exclude '__pycache__' \
   ~/.minimax/plugins/code-modernization/ MiniMaxCode/code-modernization/
 rsync -a --delete --exclude '.git' --exclude '__pycache__' \
-  ~/.gemini/skills/code-modernization/ Antigravity/code-modernization/
+  ~/.gemini/config/plugins/code-modernization/ Antigravity/code-modernization/
 
 # pi 版：本地路徑套件是「載入不複製」，改完在 pi 裡 /reload 即生效；重裝用：
 #   用在哪個專案就裝在哪個專案（寫入該專案的 .pi/settings.json）
@@ -288,15 +290,20 @@ python3 -m py_compile scripts/*.py
 pi --skill ./skills --no-session -p "列出你可用的技能"
 ```
 
-MiniMax Code 版另外確認面板三頁可產生並開得起來（母版新增的東西），
-並跑可攜性檢查（它會擋下 placeholder、bash 專屬語法、只給單一 shell 形式的指令）：
+MiniMax Code 版與 Antigravity 版另外確認腳本編譯與可攜性檢查（它會擋下 placeholder、bash 專屬語法、只給單一 shell 形式的指令）：
 
 ```sh
+# MiniMax Code 驗證
 cd MiniMaxCode/code-modernization
 python3 -m py_compile scripts/*.py
 python3 tests/test_portability.py
 python3 scripts/render_panel.py all --system <某個已存在的系統> --workspace <該專案根>
 # 產生 analysis/<system>/{PANEL,REVIEW_DECK,SIGNOFF}.html，用瀏覽器開啟，console 無錯誤
+
+# Antigravity 驗證
+cd Antigravity/code-modernization
+python3 -m py_compile scripts/*.py
+python3 tests/test_portability.py
 ```
 
 倉庫根目錄的 `tools/` 放改寫與檢查各移植的腳本（目前指向 MiniMaxCode 版；其他移植沿用同一套規則）：

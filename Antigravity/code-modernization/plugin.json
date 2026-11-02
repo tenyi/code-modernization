@@ -1,0 +1,6 @@
+{
+  "name": "code-modernization",
+  "description": "Legacy system modernization workflow toolkit: preflight, assess, map, extract-rules, brief, uplift, transform, reimagine, verify, and harden.",
+  "version": "1.0.0",
+  "disabled": true
+}

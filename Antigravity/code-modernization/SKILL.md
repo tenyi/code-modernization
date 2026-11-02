@@ -67,7 +67,7 @@ description: >-
      - **即時進度看板**：`<agent-embed src="analysis/<system>/widgets/progress.html"></agent-embed>`（里程碑 0-8 階段軌、模組證明與 Fleet 代理人監控）。
      - **卡片式規則審核甲板**：`<agent-embed src="analysis/<system>/widgets/review_deck.html"></agent-embed>`（Given/When/Then 規則卡輪播、缺陷高亮、快捷鍵裁決與 JSON 匯出）。
      - **終審驗證簽核卡**：`<agent-embed src="analysis/<system>/widgets/sign_off.html"></agent-embed>`（PROVEN 裁決徽章、5 大黃金證據檢驗清單與數位簽核表單）。
-   - 透過 `python3 scripts/render_widgets.py <progress|review|signoff|all> --system <name>` 進行一鍵組裝與渲染。
+   - 透過 `python3 "<plugin>/scripts/render_widgets.py"`（Windows: `python "<plugin>\scripts\render_widgets.py"`）`<progress|review|signoff|all> --system <name>` 進行一鍵組裝與渲染。
 2. **使用者問答互動**：
    - 當需要使用者抉擇或確認時，使用 `ask_question` 工具進行彈出式選擇或確認，並搭配 Generative UI 面板呈現完整脈絡。
 3. **子代理人協同**：

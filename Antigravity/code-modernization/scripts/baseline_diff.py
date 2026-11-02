@@ -488,7 +488,7 @@ def evidence_paths(baseline_path, text):
             tok = m.group(0)
             if not (tok.lower().endswith(EVIDENCE_EXT) or tok.endswith("/")):
                 continue
-            comps = [c for c in tok.split("/") if c]
+            comps = [c for c in tok.replace("\\", "/").split("/") if c]
             if comps and comps[0] == "analysis":
                 comps = comps[2:] if len(comps) >= 3 and comps[1] == system else []
             if comps and not any(c in (".", "..") for c in comps):

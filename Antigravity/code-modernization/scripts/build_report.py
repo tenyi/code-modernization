@@ -681,9 +681,12 @@ def write_atomic(path, data):
     try:
         with os.fdopen(fd, "wb") as fh:
             fh.write(data)
-        umask = os.umask(0)
-        os.umask(umask)
-        os.chmod(tmp, 0o666 & ~umask)
+        try:
+            umask = os.umask(0)
+            os.umask(umask)
+            os.chmod(tmp, 0o666 & ~umask)
+        except (AttributeError, OSError):
+            pass
         os.replace(tmp, path)
     except BaseException:
         if os.path.lexists(tmp):

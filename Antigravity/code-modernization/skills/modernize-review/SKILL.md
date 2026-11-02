@@ -3,6 +3,7 @@ name: modernize-review
 description: Confirm or correct the business rules that need a person's judgement; the plan and the build read your answers
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load this skill with the `skill` tool, name `modernize-review`.
 **Arguments.** `<system> [flagged|p0|all]`
 Bound as: `$system`, `$scope`.
@@ -27,7 +28,7 @@ Say how many rules will be asked (about a minute per ten). If none is left, say 
 First, generate and surface the Generative UI Review Deck:
 
 ```bash
-python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/render_widgets.py" review --system "$system" --scope "${scope:-flagged}"
+python3 "<plugin>/scripts/render_widgets.py" review --system "$system" --scope flagged
 ```
 
 Output the embed tag in your response:
@@ -46,7 +47,7 @@ Merge the answers into `analysis/$system/RULE_REVIEWS.json`:
     "RULE-004": { "verdict": "confirmed", "at": "<ISO time>", "title": "<the rule's title>", "note": "<their words, optional>" } } }
 ```
 
-`verdict` is `confirmed` (Right), `wrong` (Wrong, or not wanted) or `discuss` (Not sure). Change an earlier entry only when a new answer replaces it. Write `analysis/$system/RULE_REVIEWS.md` from it: a short paragraph, then a table `Rule | Verdict | When | Title | Note`, sorted by rule number. Refresh the report (`python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on).
+`verdict` is `confirmed` (Right), `wrong` (Wrong, or not wanted) or `discuss` (Not sure). Change an earlier entry only when a new answer replaces it. Write `analysis/$system/RULE_REVIEWS.md` from it: a short paragraph, then a table `Rule | Verdict | When | Title | Note`, sorted by rule number. Refresh the report (`python3 "<plugin>/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on).
 
 ## 4 — What happens next
 

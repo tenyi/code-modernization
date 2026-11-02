@@ -10,25 +10,31 @@ This is the Antigravity port of the upstream
 
 ## Install
 
-The package lives in `~/.gemini/skills/code-modernization/`, the Gemini CLI skill directory.
+The package lives in `~/.gemini/config/plugins/code-modernization/` (as an Antigravity plugin) or `~/.gemini/skills/code-modernization/` (as standalone skills).
 Antigravity discovers it on the next session:
 
 | Path | What it is |
 | --- | --- |
+| `plugin.json` | plugin manifest declaring the plugin name and default lifecycle status |
 | `SKILL.md` | the entry point: the whole workflow in one skill, with links to the steps below |
 | `skills/<name>/SKILL.md` | the 13 steps, one per skill |
 | `agents/<name>.md` | the 8 specialists the steps delegate to |
-| `scripts/`, `assets/` | the report, proof, rule renderer, Generative UI widgets (`assets/widgets/`) and `render_widgets.py` |
+| `scripts/`, `assets/` | the report, proof, rule renderer, interactive topology mapper, Generative UI widgets (`assets/widgets/`) and `render_widgets.py` |
+| `hooks.json` | lifecycle hooks (x-ray notes, status progression) configured for both Unix and Windows |
 
-Requirements: `python3` on `PATH` (the report, the proof and the rule renderer are Python). Without
+Requirements: Python 3 on `PATH` (`python3` on macOS/Linux, `python` or `py -3` on Windows). Without
 it the skills still run, but the artifacts they generate are not produced — the agent says so in one
 line instead of failing.
 
-The scripts and templates are found through `$SKILL_ROOT`; when the runtime does not set it, the
-skills fall back to `~/.gemini/skills/code-modernization`:
+The toolkit is fully cross-platform (macOS, Linux, and Windows). The scripts and templates are found
+through the plugin root `<plugin>`:
 
-```
-python3 "${SKILL_ROOT:-$HOME/.gemini/skills/code-modernization}/scripts/build_report.py" <system>
+```bash
+# POSIX (macOS / Linux)
+python3 "<plugin>/scripts/build_report.py" <system>
+
+# PowerShell (Windows)
+python "<plugin>/scripts/build_report.py" <system>
 ```
 
 ## Start here

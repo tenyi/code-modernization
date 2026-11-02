@@ -212,7 +212,7 @@ def parse_rules(text):
 
 
 def file_kind(rel):
-    parts = rel.split("/")
+    parts = rel.replace("\\", "/").split("/")
     name = parts[-1]
     if os.path.splitext(name)[1].lower() in DOC_EXT:
         return "doc"

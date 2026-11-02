@@ -5,11 +5,15 @@
 | 目錄 | Runtime | 誰做的 | 來源（真正被 runtime 讀取的地方） |
 | --- | --- | --- | --- |
 | `Claude/code-modernization/` | Claude Code（上游原版，非移植） | Anthropic 官方 `claude-plugins-official` | `~/.claude/plugins/code-modernization/` |
-| `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent） | `~/.minimax/plugins/code-modernization/` |
+| `MiniMaxCode/code-modernization/` | MiniMax Code (mcode) | MCode（minimax Code agent）；2.2.0，**單一版本支援 Windows、macOS、Linux** | `~/.minimax/plugins/code-modernization/` |
 | `Antigravity/code-modernization/` | Antigravity（Gemini CLI 技能目錄） | Antigravity 裡的 Gemini 3.8 Flash，以 MiniMax Code 版為基底衍生 | `~/.gemini/skills/code-modernization/` |
-| `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植 | 見 [Codex 安裝說明](Codex/README.md) |
+| `Codex/code-modernization/` | Codex | 以 MiniMax Code 版為基底移植；單一版本支援 Windows、macOS、Linux | 見 [Codex 安裝說明](Codex/README.md) |
 | `Pi/code-modernization/` | pi（`@earendil-works/pi-coding-agent`） | 以 MiniMax Code 版為母版、**以 `Claude/` 為事實來源**移植 | pi package：`pi install -l <path>`（裝在專案下），見 [pi 安裝說明](Pi/README.md) |
 | `OpenCode/code-modernization/` | OpenCode V2（`opencode.ai/v2`） | 以 MiniMax Code 版為母版移植 | 專案 `opencode.json(c)` 的 `skills`/`plugins` 陣列 + agents 目錄，見 [OpenCode 安裝說明](OpenCode/README.md) |
+
+Codex 版已在 Windows 與 WSL Ubuntu 驗證拓樸產生測試；macOS 尚未實測。
+MiniMax Code 版已在 Windows 驗證（外掛載入、6 個 hook handler、三個面板頁、報告產生）；
+macOS／Linux 的程式與指令形式都已就位，但**尚未實測**——目前手上的 mcode 只有 Windows 版。
 
 `Claude/` 是**唯讀的上游鏡像**：所有移植的規則都從它推導出來（Claude Code 才有 `AskUserQuestion`、
 `Task`、腳本化 `Workflow`、TypeScript hooks 與 TUI 面板），但倉庫裡這份不作為執行來源。
@@ -79,6 +83,16 @@ author 欄位是當時的 git 設定值，但內容由 Gemini 3.8 Flash 產生�
   `scripts/render_panel.py` 產生；面板裡的 fleet 區塊讀 `analysis/.fleet.json`（由 hook 累積）
 - 套件格式：`.minimax-plugin/plugin.json` + `skills/` + `agents/` + `hooks/` + `scripts/` + `assets/`
 - 遙測已完全移除
+- **2.2.0：`<plugin>` 慣例**。Skill 內文**不做 placeholder 替換**（只有 subagent 系統提示與
+  Hook 指令會替換 `${PLUGIN_ROOT}`），所以技能正文一律寫 `<plugin>`，並在前言說明如何從
+  `skill` 工具回報的絕對路徑求出套件根目錄
+- **2.2.0：一套套件、三個作業系統**。runtime 的 shell 跟著平台走（macOS／Linux 是 bash、
+  Windows 是 PowerShell），所以每個 shell 相關指令都給 **POSIX** 與 **PowerShell** 兩種形式並
+  標在**同一行**，技能前言要求先偵測一次 shell 再選形式；能用 runtime 工具（`read` 的
+  `offset`/`limit`）的地方就不碰 shell
+- 13 支 Python 腳本（母版的 10 支 + `xray.py`／`status.py`／`fleet.py`／`render_panel.py`／
+  `render_rules.py`／`make_shards.py`／`render_topology.py`）＋ `tests/test_portability.py`；
+  `render_topology.py` 取代上游用 bash heredoc 渲染拓樸圖那段
 
 **Antigravity 版**（`Antigravity/`）
 
@@ -228,7 +242,7 @@ pi -a --no-session -p "列出你能看到的、以 modernize 開頭的技能名"
 | 規格檔 | 對應 runtime | 內容摘要 |
 | --- | --- | --- |
 | [`PORTING-SPEC.md`](PORTING-SPEC.md) | 全部（共用） | 上游 Claude Code 事實來源、共用規則與檢查清單 |
-| [`MiniMaxCode/PORTING-SPEC.md`](MiniMaxCode/PORTING-SPEC.md) | MiniMax Code（母版） | mcode 工具對應、`skill` 工具與 `code-modernization:` 前綴、`ask_user`、`task`、`hooks/hooks.json`、`.minimax-plugin` manifest |
+| [`MiniMaxCode/PORTING-SPEC.md`](MiniMaxCode/PORTING-SPEC.md) | MiniMax Code（母版） | mcode 工具對應、`skill` 工具與 `code-modernization:` 前綴、`ask_user`、`task`、`hooks/hooks.json`、`.minimax-plugin` manifest、**`<plugin>` 慣例**、**shell 中立（POSIX／PowerShell 雙形式）** |
 | [`Antigravity/PORTING-SPEC.md`](Antigravity/PORTING-SPEC.md) | Antigravity | Gemini CLI 技能目錄慣例、裸名技能、`ask_question`、`invoke_subagent`（`Role`/`TypeName`）、`$SKILL_ROOT` fallback、無 hooks（chmod guardrail） |
 | [`Codex/PORTING-SPEC.md`](Codex/PORTING-SPEC.md) | Codex | 單一技能 + 13 個程序檔、角色指引式代理、`CODE_MODERNIZATION_ROOT` 自行設定、循序執行、無 hooks |
 | [`Pi/PORTING-SPEC.md`](Pi/PORTING-SPEC.md) | pi | 技能發現、extension 補三塊拼圖（`task`／`ask_user`／hooks）、`find` 取代 `glob` |
@@ -262,8 +276,11 @@ git add -A && git commit -m "sync ports"
 ## 檢查
 
 改動後至少確認：manifest 可解析、skill frontmatter 的 `name` 與目錄同名、
-`${PLUGIN_ROOT}`（或該 runtime 的對應變數：pi 與 OpenCode 都是 `$CODE_MODERNIZATION_ROOT`）指到的檔案真的存在、
-Python 能編譯。pi 版另外確認 13 個技能都被 pi 發現、extension 能載入：
+套件根目錄的寫法指到的檔案真的存在、Python 能編譯。
+根目錄怎麼寫，各 runtime 不同：Skill 內文在 MiniMax Code 版用 `<plugin>`（Skill 內文不做
+placeholder 替換），pi 與 OpenCode 用 `$CODE_MODERNIZATION_ROOT`；
+`${PLUGIN_ROOT}` 只在 subagent 系統提示與 Hook 指令裡會被替換。
+pi 版另外確認 13 個技能都被 pi 發現、extension 能載入：
 
 ```sh
 cd Pi/code-modernization
@@ -271,13 +288,23 @@ python3 -m py_compile scripts/*.py
 pi --skill ./skills --no-session -p "列出你可用的技能"
 ```
 
-MiniMax Code 版另外確認面板三頁可產生並開得起來（母版新增的東西）：
+MiniMax Code 版另外確認面板三頁可產生並開得起來（母版新增的東西），
+並跑可攜性檢查（它會擋下 placeholder、bash 專屬語法、只給單一 shell 形式的指令）：
 
 ```sh
 cd MiniMaxCode/code-modernization
 python3 -m py_compile scripts/*.py
+python3 tests/test_portability.py
 python3 scripts/render_panel.py all --system <某個已存在的系統> --workspace <該專案根>
 # 產生 analysis/<system>/{PANEL,REVIEW_DECK,SIGNOFF}.html，用瀏覽器開啟，console 無錯誤
+```
+
+倉庫根目錄的 `tools/` 放改寫與檢查各移植的腳本（目前指向 MiniMaxCode 版；其他移植沿用同一套規則）：
+
+```sh
+# 把母版的 shell 形式改成 POSIX／PowerShell 雙形式（冪等；--check 只檢查不改）
+python3 tools/port_skills_crossplatform.py            # 套用
+python3 tools/port_skills_crossplatform.py --check     # 只報哪裡還是單一 shell 形式
 ```
 
 OpenCode 版另外跑移植規格 §9 的檢查（py_compile、禁用 token 的全區 grep、

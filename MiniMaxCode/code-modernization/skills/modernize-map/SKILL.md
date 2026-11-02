@@ -3,6 +3,7 @@ name: modernize-map
 description: Show me the structure — dependencies, data flow, entry points and business flows, as an interactive map — use when you need to know how the pieces of a legacy system connect before touching anything.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `code-modernization:modernize-map`.
 **Arguments.** `<system> [--graph <file>] [--no-describe]`
 Bound as: `$system`, `$args` — `$system` is the system name, `$args` is the whole argument text as it arrived in the user's message.
@@ -12,7 +13,7 @@ Build a **dependency and topology map** of the system and render it as an
 interactive page. The assessment found the domains; this goes one level down:
 how do the *pieces* connect? It is the map an engineer needs before touching anything.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `code-modernization:modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is the skill `code-modernization:modernize $system --source <path to the code>`. Start the subagents, wait for every one, never end the turn while one is running.
 
 **Nothing edits the legacy source.** `legacy/` is read-only; everything you write goes to `analysis/$system/` — the extraction script, `topology.json`, the Mermaid files and the rendered `TOPOLOGY.html`.
 
@@ -174,26 +175,17 @@ edge-kind toggles, and a walkthrough that plays each persona flow. Build it from
 template this plugin ships; do not hand-write a viewer:
 
 ```bash
-python3 - "${PLUGIN_ROOT}/assets/topology-viewer.html" analysis/$system <<'EOF'
-import json, sys
-tpl_path, out_dir = sys.argv[1], sys.argv[2]
-tpl = open(tpl_path).read()
-marker = "/*__TOPOLOGY_DATA__*/ null"
-assert marker in tpl, f"injection marker not found in {tpl_path}"
-data = json.dumps(json.load(open(f"{out_dir}/topology.json")))
-# topology.json comes from UNTRUSTED source (names from filenames, observations from
-# analyzed code). The data lands in a <script> block, which the HTML parser closes on
-# the literal bytes "</script>" whatever the JS string context, and json.dumps does not
-# escape "<". Escape it to kill the breakout.
-data = data.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-open(f"{out_dir}/TOPOLOGY.html", "w").write(tpl.replace(marker, "/*__TOPOLOGY_DATA__*/ " + data))
-print(f"wrote {out_dir}/TOPOLOGY.html")
-EOF
+python3 "<plugin>/scripts/render_topology.py" $system
 ```
 
+The script reads `analysis/$system/topology.json`, injects it into the template this
+plugin ships (`<plugin>/assets/topology-viewer.html`) and writes
+`analysis/$system/TOPOLOGY.html`. It needs no path to the plugin: it finds the
+template next to itself, so it works the same from any shell.
+
 The viewer is self-contained (the d3 subset it needs is inlined), so it works offline.
-If the template is not found, `${PLUGIN_ROOT}` was not substituted: report
-that rather than hand-writing a viewer.
+If the script reports that the template is missing, `<plugin>` was not resolved
+correctly: report that rather than hand-writing a viewer.
 
 Also write small, exportable Mermaid files (each under ~40 edges; collapse to domain
 level if the graph is bigger, since dense Mermaid is unreadable): `call-graph.mmd`
@@ -204,7 +196,7 @@ the primary flow, with p50/p99 if `assess` gathered telemetry), all in
 
 ## Finish
 
-Refresh the report: `python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`
+Refresh the report: `python3 "<plugin>/scripts/build_report.py" $system`
 (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Tell the user to open
 `analysis/$system/TOPOLOGY.html` and try: search a module, click it for its
 connections and description, pick a persona flow. The next step is the skill

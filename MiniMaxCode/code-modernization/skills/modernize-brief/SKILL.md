@@ -3,6 +3,7 @@ name: modernize-brief
 description: Write the phased Modernization Brief — the plan a steering committee approves and the build steps execute against
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-brief`.
 **Arguments.** `<system> [target-stack]`
 Bound as: `$system`, `$target_stack`.
@@ -133,6 +134,6 @@ Approval covers: Phase 1 only | Full plan
 
 ## Finish
 
-Refresh the report: `python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system` (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Present a summary of the brief and **stop: write nothing further until the user
+Refresh the report: `python3 "<plugin>/scripts/build_report.py" $system` (a convenience: if it fails or `python3` is missing, say so in one line and carry on). Present a summary of the brief and **stop: write nothing further until the user
 explicitly approves** (use plan mode if the session supports it). This is the human control point, and
 "no objection" is not approval. After approval, the next step is Phase 1's build step.

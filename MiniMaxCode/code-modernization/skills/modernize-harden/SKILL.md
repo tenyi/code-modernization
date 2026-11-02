@@ -3,6 +3,7 @@ name: modernize-harden
 description: Security scan of the legacy system with a reviewable remediation patch (OWASP, CWE, CVEs, secrets, injection); use when the legacy code needs a vulnerability scan and a fix the person applies themselves.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `code-modernization:modernize-harden`.
 **Arguments.** `<system> [--show-secrets]`
 Bound as: `$system`, `$show_secrets`.
@@ -13,7 +14,7 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 Run a **security hardening pass** on the legacy system: find vulnerabilities, rank them, and produce a
 reviewable patch for the critical ones. `$system` is the first argument; flags go after it
 (`<system> --show-secrets`), since a flag in first place would be read as the system name.
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running.
 
 This step never edits `legacy/$system`: it writes findings and a proposed patch to `analysis/$system/`, and the
 user reviews and applies (or not). It changes no file of the legacy system by itself.
@@ -287,7 +288,7 @@ ship a hunk that failed its last review.
 
 ## Finish
 
-Refresh the report (`python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on) and tell the user:
+Refresh the report (`python3 "<plugin>/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on) and tell the user:
 
 - `analysis/$system/SECURITY_FINDINGS.md`: findings, remediation log, patch review. If Coverage gaps lists any,
   say so plainly and offer to re-run just those.

@@ -16,7 +16,18 @@ automatically; the plugin shows up under *Local Plugins* and is enabled by defau
 
 Requirements: `python3` on `PATH` (the report, the proof and the rule renderer are Python). Without
 it the skills still run, but the artifacts they generate are not produced — the agent says so in one
-line instead of failing.
+line instead of failing. On Windows, `python` or `py -3` works just as well when `python3` is not on
+`PATH`.
+
+**Windows, macOS and Linux.** One package runs on all three. The runtime's shell follows the
+platform (bash on macOS and Linux, PowerShell on Windows), so every command that differs
+between the shells is given in both forms, labelled **POSIX** and **PowerShell**, and each
+skill tells the agent to detect the shell once and pick the matching form. The skills name the
+plugin root `<plugin>` (the agent resolves it from the path the `skill` tool reports) instead
+of a placeholder, so a quoted path never points at a literal `~` or an unsubstituted variable.
+`tests/test_portability.py` fails the tree if a command ships in one shell's form only, or if
+bash-only syntax (heredoc, process substitution, `${var:-default}`) sneaks back in: run it with
+`python tests/test_portability.py`.
 
 ## Start here
 

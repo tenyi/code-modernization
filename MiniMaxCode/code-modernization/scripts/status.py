@@ -204,9 +204,17 @@ def line_of(workspace, system):
     return "\n".join(steps)
 
 
+def read_stdin():
+    """The hook's JSON arrives on stdin. Windows shells love a UTF-8 BOM, so drop it."""
+    try:
+        raw = sys.stdin.buffer.read()
+    except AttributeError:
+        raw = sys.stdin.read().encode("utf-8")
+    return raw.decode("utf-8-sig", "replace")
+
 def main():
     try:
-        payload = json.loads(sys.stdin.read() or "{}")
+        payload = json.loads(read_stdin() or "{}")
     except ValueError:
         payload = {}
     if not isinstance(payload, dict):

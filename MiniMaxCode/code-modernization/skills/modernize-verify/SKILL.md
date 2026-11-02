@@ -3,6 +3,7 @@ name: modernize-verify
 description: Prove the modernized code behaves like the legacy, with an independent re-check and one verdict per module; use after transform, uplift or reimagine, in a fresh session if you can.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `code-modernization:modernize-verify`.
 **Arguments.** `<system> [module]`
 Bound as: `$system`, `$module`.
@@ -18,7 +19,7 @@ itself: **keep the result file or the raw log of every test run and every canary
 `test-runs.json`.** You write nothing in `legacy/`, never hand-edit the built code, the tests, an output or a result
 to improve a verdict, and never tick or approve anything a person owns. Run every command from the workspace root.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. Start any subagent, wait for it, never end the turn while one is running. Stop any server or other process you started before you finish, and say you did. Before running any suite or the legacy code, read its configuration for the databases and services it connects to: if any is not a local or throwaway instance, stop and ask which environment to use.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. Start any subagent, wait for it, never end the turn while one is running. Stop any server or other process you started before you finish, and say you did. Before running any suite or the legacy code, read its configuration for the databases and services it connects to: if any is not a local or throwaway instance, stop and ask which environment to use.
 
 ## 1 — What was built
 
@@ -31,7 +32,7 @@ If nothing is built, say so and stop: the next step is the brief's Phase 1 comma
 
 ## 2 — Which rules do the tests name?
 
-Rewrite and reimagine: `python3 "${PLUGIN_ROOT}/scripts/trace_rules.py" $system --module <module>` (after step 3 add `--results <the module's result folder>`;
+Rewrite and reimagine: `python3 "<plugin>/scripts/trace_rules.py" $system --module <module>` (after step 3 add `--results <the module's result folder>`;
 before it nothing has run, so a named rule reads "named, not run"). A rule counts as tested only when a test that ran and passed backs it: the id
 (`RULE-017`, or `rule017`) is in the name of a passing test or of its class, or a test file names it on a line not marked skipped or pending and
 that file's class passed. A rule only a skipped, pending or failing test names is "named, not run", and one only the notes name is "claimed":
@@ -44,7 +45,7 @@ For each module (uplift: the units the baseline covers) delete its build output 
 the **full** suite (uplift: the command `BASELINE.md` records; Maven also `-Dmaven.test.failure.ignore=true`). Keep the runner's
 JUnit-style XML where it can write it (Maven writes `target/surefire-reports`; `pytest --junitxml=<file>`;
 `dotnet test --logger "junit;LogFilePath=<file>"` or `trx`; `jest-junit`; `gotestsum --junitfile <file>`) and the raw output
-either way: `<test command> 2>&1 | tee analysis/$system/equivalence/<suite>.test-output.txt`. The pack reads the XML, else the summary
+either way: `<test command> 2>&1 | tee analysis/$system/equivalence/<suite>.test-output.txt` (POSIX) or `<test command> 2>&1 | Tee-Object -FilePath analysis/$system/equivalence/<suite>.test-output.txt` (PowerShell). The pack reads the XML, else the summary
 lines of Maven and Gradle, cargo, pytest, unittest, go test, dotnet test, jest, vitest, ctest and phpunit. Only the XML lists each test, so only it can
 show that a rule's test ran; a log gives counts. A failure caused by this
 machine (a missing tool, a sandbox limit) is still a failure: say why in the suite `note`. If the toolchain will not run here, record the
@@ -55,7 +56,7 @@ Break one line that matters (a rounding mode, a threshold by one, a comparison),
 file) and keep that run's XML or raw log in `analysis/$system/equivalence/canary/<module>/`. The pack compares its failures with the
 clean run's. A `Canary:` line in the notes is a claim; the pack does not count it.
 
-**Uplift:** also run `python3 "${PLUGIN_ROOT}/scripts/baseline_diff.py" analysis/$system/BASELINE.md --junit <results folder>`.
+**Uplift:** also run `python3 "<plugin>/scripts/baseline_diff.py" analysis/$system/BASELINE.md --junit <results folder>`.
 A test that pins the old version's behavior and fails on the new one is a difference, not a test bug, and tests the pilot added after
 the baseline show as new failures (say so in the suite `note`). A person decides each: fix the code, update the test, or approve it in a
 table headed "Approved differences", `| Test | Reason |`, in `BASELINE.md`. You never edit or approve.
@@ -76,7 +77,7 @@ Read any development generator or runner before you run it (some delete their ow
 and `cases.json` are the development cases: never touch them.
 
 1. If `analysis/$system/equivalence/cases.json` exists, re-run the new side (its `new.command` names the script when one was
-   recorded), then run `python3 "${PLUGIN_ROOT}/scripts/compare.py" analysis/$system/equivalence/cases.json --out analysis/$system/EQUIVALENCE.json`.
+   recorded), then run `python3 "<plugin>/scripts/compare.py" analysis/$system/equivalence/cases.json --out analysis/$system/EQUIVALENCE.json`.
    With several modules keep each module's `cases.json` and `fresh-cases.json` in `analysis/$system/equivalence/<module>/` and run
    `compare.py` on each; the pack judges the cases files itself, so `--out` only feeds the report.
 2. **Fresh-input check.** Invent inputs that development did not use, so that **at least 10 remain** after the ones the legacy
@@ -98,7 +99,7 @@ and `cases.json` are the development cases: never touch them.
    `{"cases": [{"id": "F01-out", "input": "F01", "title": "…", "legacy": "fresh/legacy/F01/out.txt", "new": "fresh/new/F01/out.txt", "mask": [...]}]}`.
    An input counts through a non-empty output that differs from every development output (status lines such as COMPLETED repeat by
    nature and do not count). Then run
-   `python3 "${PLUGIN_ROOT}/scripts/compare.py" analysis/$system/equivalence/fresh-cases.json --out analysis/$system/equivalence/FRESH_EQUIVALENCE.json`.
+   `python3 "<plugin>/scripts/compare.py" analysis/$system/equivalence/fresh-cases.json --out analysis/$system/equivalence/FRESH_EQUIVALENCE.json`.
 4. Mask only what legitimately varies (one regex beats a list of byte ranges) and say why; text a runtime generates (an exception
    message) is not product output: print only its class or mask it. Any other difference is a finding: report it, never hand-edit an
    output. If a side legitimately writes no file, save an empty one so a person can approve the difference. If the legacy refuses an
@@ -126,16 +127,16 @@ brief's unticked §7 questions and exit criteria; a person decides those, so nev
 `module` is the folder name under `modernized/$system/` (an uplift's suites and canaries may name a unit). Give `junit` or `log` for
 every suite and canary: a file the pack cannot parse is no evidence. `legacy.ran` is `false`, with `why`, when the legacy cannot run
 here. `note` is for anything a reader needs, cause first, under 250 characters. Then run
-`python3 "${PLUGIN_ROOT}/scripts/proof_pack.py" $system $module` (no `$module` for all). It writes `analysis/$system/VERIFICATION.md`
+`python3 "<plugin>/scripts/proof_pack.py" $system $module` (no `$module` for all). It writes `analysis/$system/VERIFICATION.md`
 and `VERIFICATION.json`; exit 1 only means "not PROVEN". Show the user the verdict per module, the reasons word for word, for a rewrite
 the P0 rule table, any folder listed as test tooling (not judged), **what this does not prove**, and the blank sign-off block. Do not soften a reason or change a verdict; if you think
 a rule is wrong, say so and leave the file as it is.
 
 ## Finish
 
-Refresh the report (`python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is
+Refresh the report (`python3 "<plugin>/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is
 missing, say so in one line and carry on), then render the sign-off card (`python3
-"${PLUGIN_ROOT}/scripts/render_panel.py" signoff --system $system`), which writes
+"<plugin>/scripts/render_panel.py" signoff --system $system`), which writes
 `analysis/$system/SIGNOFF.html`: the verdict banner, what the proof does not establish, the verdict per module and
 the sign-off block. Deliver the card with a `<deliver-assets>` block. A named person signs in
 `analysis/$system/VERIFICATION.md`; the card never signs for them. Then name the next step. **PARTLY PROVEN or NOT PROVEN:** turn each reason, in order, into a

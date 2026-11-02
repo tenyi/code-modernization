@@ -3,6 +3,7 @@ name: modernize-transform
 description: Rewrite one legacy module in the target stack, with tests that prove it behaves the same; use when a phase of the modernization brief calls for one cross-stack module rewrite.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `code-modernization:modernize-transform`.
 **Arguments.** `<system> [module] [target-stack]`
 Bound as: `$system`, `$module`, `$target_stack`.
@@ -21,7 +22,7 @@ characterization tests and its own proof, and the next module is a separate invo
 **The legacy source is never edited.** This step writes only under `analysis/$system/` and
 `modernized/$system/$module/`; `legacy/$system/` is the untouched baseline.
 
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent and wait for its result: never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did. **If `$module` or `$target_stack` is empty**, read
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent and wait for its result: never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did. **If `$module` or `$target_stack` is empty**, read
 `analysis/$system/MODERNIZATION_BRIEF.md`: take the target stack it names, and the first module of
 the earliest phase whose `Command:` is `transform` that has no
 `modernized/$system/<module>/TRANSFORMATION_NOTES.md` yet (with no brief, the target in `INTENT.md`). Say which you picked.
@@ -127,7 +128,7 @@ While iterating, run only this module's tests; run the whole suite once before S
    under `analysis/$system/equivalence/legacy/` and `.../new/`, list the pairs in
    `analysis/$system/equivalence/cases.json` (paths relative to that folder; the schema is at the top of
    `scripts/compare.py`), and run
-   `python3 "${PLUGIN_ROOT}/scripts/compare.py" analysis/$system/equivalence/cases.json --out analysis/$system/EQUIVALENCE.json`.
+   `python3 "<plugin>/scripts/compare.py" analysis/$system/equivalence/cases.json --out analysis/$system/EQUIVALENCE.json`.
    That script, not your judgment, decides same or different. Mask only fields that legitimately vary
    (timestamps, generated ids) and say what each mask hides. A difference you accept is recorded with a
    reason in the case's `approvedDifference`, and only a person accepts it.
@@ -141,7 +142,7 @@ Write `modernized/$system/$module/TRANSFORMATION_NOTES.md`: a mapping table (leg
 file:lines, per behavior); deliberate deviations with rationale; what was NOT migrated (dead code,
 unreachable branches) and why; the canary result and the executed-case count; follow-ups for the next
 dependent module. Show one representative behavior side by side
-(`diff -y --width=160 <(sed -n '<lines>p' <legacy file>) <target file>`). Never pick a credential-bearing
+(read the same range out of both files with the `read` tool — `offset` and `limit`, the same on every platform — and put the legacy lines and the target lines next to each other in the table; POSIX: `sed -n '<start>,<end>p' <legacy file>`; PowerShell: `Get-Content <legacy file> | Select-Object -Skip <start-1> -First <count>`). Never pick a credential-bearing
 range, and mask any credential-like literal in the notes: they live in `modernized/` and get committed.
 
 **`TRANSFORMATION_NOTES.md` is the completion marker for this module.** A module is done when
@@ -174,5 +175,5 @@ value.
 Apply HIGH-severity feedback and list the rest in the notes.
 
 Report: tests passing, cases executed, lines of legacy retired, where the artifacts are. Refresh the
-report (`python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). The next step is the brief's next module, or `code-modernization:modernize-harden $system`
+report (`python3 "<plugin>/scripts/build_report.py" $system`, a convenience: if it fails or `python3` is missing, say so in one line and carry on). The next step is the brief's next module, or `code-modernization:modernize-harden $system`
 when the phase is done.

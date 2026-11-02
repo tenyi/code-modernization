@@ -41,6 +41,17 @@ name: modernize-<name>
 description: <與母版同一句，不動>
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this
+skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:`
+line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that
+absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash
+expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin
+runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and
+Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash,
+`$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command
+below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and
+**PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when
+`python3` is not on `PATH`.
 **Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-<name>`.
 **Arguments.** `<system> [options]`
 Bound as: `$system`, `$option`.
@@ -51,10 +62,22 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 <母版的程序散文，逐行對應>
 ```
 
-- **mcode 沒有 `**Package files.**` 段**：這是 mcode 與 pi／OpenCode 的差別。mcode 在啟動時
-  替換 `${PLUGIN_ROOT}`，技能正文直接寫 `python3 "${PLUGIN_ROOT}/scripts/<script>.py" …`。
+- **技能檔內文不會做 placeholder 替換。** `${PLUGIN_ROOT}` 只在 subagent 的系統提示與
+  Hook 指令裡會被替換，Skill 內文不會（這一點 2.0.0 版的規格寫錯了）。因此技能正文
+  一律寫 `<plugin>`，並在前言說明如何求出絕對路徑。
+- **一套套件，三個作業系統。** mcode 在 macOS／Linux 用 bash、在 Windows 用 PowerShell，
+  所以技能正文不能寫死單一 shell。規則：
+  - 每個只有某一個 shell 認得的指令，都要在**同一行**給出兩種形式，並加上
+    **POSIX** / **PowerShell** 標籤（Windows 側若是 `cmd.exe`，標 **Windows** 亦可）。
+  - 不要用 shell 專屬語法（heredoc、process substitution、`${var:-default}`）：兩邊都
+    解析不了。要做這類事情就寫成 `scripts/` 裡的 Python 腳本（例：拓樸圖渲染）。
+  - 能用 runtime 工具（`read` 的 `offset`/`limit`）就不必碰 shell。
+  - `hooks/hooks.json` 同時給 `command`（POSIX）與 `commandWindows`（Windows），由 runtime
+  依平台選擇，兩邊都不用改。
 - `**Argument source.**` 逐字保留母版版本，只把問卷工具名換成 `ask_user`。
 - 母版的標題結構、章節編號、數字（批次上限 8、shard 門檻、估計值）全部保留。
+- `tests/test_portability.py` 會擋下：placeholder、波浪號路徑、bash 專屬語法、只給單一
+  shell 形式的指令、`<plugin>` 指向不存在的檔案。
 
 ---
 
@@ -114,7 +137,8 @@ MiniMaxCode/code-modernization/
   agents/<name>.md                  8 個 subagent
   skills/<name>/SKILL.md            13 個技能
   hooks/hooks.json                  6 個 hook handler（見下）
-  scripts/*.py                      12 支
+  scripts/*.py                      13 支
+  tests/test_portability.py         可攜性檢查（技能檔不得含 bash 專屬語法）
   assets/report-template.html
   assets/panel-template.html
   assets/topology-viewer.html

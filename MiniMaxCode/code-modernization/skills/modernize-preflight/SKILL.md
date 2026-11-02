@@ -3,6 +3,7 @@ name: modernize-preflight
 description: Run this first — checks the environment, records where the code lives, and says what to fix before anything else runs
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load this skill with the `skill` tool, name `code-modernization:modernize-preflight`.
 **Arguments.** `<system> [target-stack] [--source <path>]`
 Bound as: `$system`, `$target_stack`.
@@ -28,10 +29,10 @@ put). Nothing is ever copied for you.
 
 - If the arguments carry `--source <path>` (a directory, absolute or relative), check that it exists and is
   not the filesystem root or the user's home directory, then, only if `legacy/$system` does not exist yet, create
-  the link: `mkdir -p legacy && ln -s <absolute path> legacy/$system` (on Windows a junction: `cmd /c mklink /J
+  the link (POSIX: `mkdir -p legacy && ln -s <absolute path> legacy/$system`; Windows: `cmd /c mklink /J
   legacy\$system <absolute path>`). If `legacy/$system` already exists and points elsewhere, say so and change
   nothing.
-- Say where `legacy/$system` points (`readlink legacy/$system`, or "a directory in this workspace") in one line
+- Say where `legacy/$system` points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`; or "a directory in this workspace") in one line
   before you start.
 - If `$target_stack` starts with `--`, it is a flag, not a stack.
 
@@ -78,7 +79,7 @@ file split.
 
 ## Check 2 — Analysis tooling
 
-Check availability (`command -v`), version and what degrades without it:
+Check availability (POSIX: `command -v <tool>`; PowerShell: `Get-Command <tool>`), version and what degrades without it:
 
 | Tool | Used by | Without it |
 |---|---|---|

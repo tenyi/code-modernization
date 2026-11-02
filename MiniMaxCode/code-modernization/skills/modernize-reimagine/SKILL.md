@@ -3,6 +3,7 @@ name: modernize-reimagine
 description: Rebuild the system from its extracted intent on a new architecture, with two human checkpoints; use when the target is a new architecture rather than a rewrite or an uplift.
 ---
 
+**Plugin directory.** `<plugin>` is the installed plugin root, the directory that holds this skill's `skills/` folder. The `skill` tool reports this file's absolute path in its `Location:` line, so the plugin root is that path with `skills/<name>/SKILL.md` removed. Substitute that absolute path for `<plugin>` in every command below. Never put `~` inside a quoted path: bash expands it, PowerShell does not, so the file fails to open on Windows. **Shell.** This plugin runs on macOS, Linux and Windows. The runtime's shell follows the platform: bash on macOS and Linux, PowerShell on Windows. Detect it once, at the start (`uname -s` under bash, `$PSVersionTable.PSVersion` under PowerShell), and use the matching form of every command below. Where two forms are given they are labelled **POSIX** (macOS and Linux) and **PowerShell** (Windows). **Python.** Use `python3`; on Windows use `python` or `py -3` when `python3` is not on `PATH`.
 **Invocation.** Load with the `skill` tool, name `code-modernization:modernize-reimagine`.
 **Arguments.** `<system> [target-vision]`
 Bound as: `$system`, `$vision`.
@@ -12,7 +13,7 @@ infer it from `analysis/` and state the assumption in one line. Never guess sile
 
 The first token of the arguments is the system name (`$system`); **everything after it is the target
 vision**, usually several words, so do not truncate it (with none, use the one in `analysis/$system/INTENT.md`). Below, `<vision>` means that whole remainder.
-The code is `legacy/$system`, often a symlink to where it really lives: say where it points (`readlink legacy/$system`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did.
+The code is `legacy/$system`, often a symlink to where it really lives: say where it points (POSIX: `readlink legacy/$system`; PowerShell: `(Get-Item legacy/$system).Target`) in one line before you start. If `legacy/$system` does not exist, stop and say so: nothing can run without the code, so the fix is `code-modernization:modernize $system --source <path to the code>`. Start every subagent, wait for every one, never end the turn while one is still running. Stop any server or other process you started (a legacy app on a local port, a watcher) before you finish, and say you did.
 
 **Reimagine** the system as: <vision>. This is not a port but a rebuild from extracted intent: the legacy
 system is the *specification source*, not the structural template. This step orchestrates a team of
@@ -191,6 +192,6 @@ a pointer to where they are provisioned, never values. This file also marks the 
 `status` and the report.
 
 Report: services scaffolded, acceptance tests defined, the share of behaviors with a home, and where the
-artifacts are. Refresh the report (`python3 "${PLUGIN_ROOT}/scripts/build_report.py" $system`,
+artifacts are. Refresh the report (`python3 "<plugin>/scripts/build_report.py" $system`,
 a convenience: if it fails or `python3` is missing, say so in one line and carry on). The next step is implementing the pending rules service by service,
 then `code-modernization:modernize-harden $system`.
